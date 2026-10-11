@@ -7,12 +7,12 @@ interface OrderDetailProps {
     onClose: () => void;
 }
 
-const steps: readonly OrderStatus[] = ["pending", "processing", "finished"];
+const steps: readonly OrderStatus[] = ["pending", "processing", "completed"];
 
 const stepText: Record<OrderStatus, "stepPending" | "stepProcessing" | "stepFinished"> = {
     pending: "stepPending",
     processing: "stepProcessing",
-    finished: "stepFinished",
+    completed: "stepFinished",
 };
 
 export function OrderDetail({ order, onClose }: OrderDetailProps) {

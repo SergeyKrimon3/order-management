@@ -70,7 +70,7 @@ namespace OrderManagement.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("ck_orders_amount", "amount > 0");
 
-                            t.HasCheckConstraint("ck_orders_status", "status IN ('pending', 'processing', 'finished')");
+                            t.HasCheckConstraint("ck_orders_status", "status IN ('pending', 'processing', 'completed')");
                         });
 
                     b.HasData(

@@ -520,7 +520,7 @@ tbody tr:hover, tbody tr.selected { background: rgba(102, 186, 255, 0.16); }
 }
 .pending { box-shadow: inset 0 0 0 1px currentColor; }
 .processing { background: var(--blue); color: var(--black); }
-.finished { background: var(--color-text); color: var(--color-canvas); }
+.completed { background: var(--color-text); color: var(--color-canvas); }
 
 .cards { display: none; list-style: none; margin: 0; padding: 0; gap: 8px; }
 .card {

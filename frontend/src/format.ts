@@ -4,7 +4,7 @@ import { t, type MessageKey } from "./i18n";
 const statusKey: Record<OrderStatus, MessageKey> = {
     pending: "pending",
     processing: "processing",
-    finished: "finished",
+    completed: "completed",
 };
 
 export function statusLabel(status: OrderStatus): string {

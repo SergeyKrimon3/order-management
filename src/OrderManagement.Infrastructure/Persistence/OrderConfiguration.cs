@@ -12,7 +12,7 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         {
             table.HasCheckConstraint(
                 "ck_orders_status",
-                "status IN ('pending', 'processing', 'finished')");
+                "status IN ('pending', 'processing', 'completed')");
             table.HasCheckConstraint("ck_orders_amount", "amount > 0");
         });
 

@@ -1,4 +1,4 @@
-export type OrderStatus = "pending" | "processing" | "finished";
+export type OrderStatus = "pending" | "processing" | "completed";
 
 export interface Order {
     id: string;

@@ -20,7 +20,7 @@
     "saveError": "No se pudo cerrar el pedido.",
     "pending": "Pendiente",
     "processing": "Procesando",
-    "finished": "Finalizado",
+    "completed": "Completado",
     "stepPending": "Anotado en el mostrador",
     "stepProcessing": "Separando el producto",
     "stepFinished": "Entregado al cliente",

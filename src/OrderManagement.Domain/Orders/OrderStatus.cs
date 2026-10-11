@@ -4,5 +4,5 @@ public enum OrderStatus
 {
     Pending,
     Processing,
-    Finished
+    Completed
 }

@@ -1,6 +1,6 @@
 import type { CreateOrderInput, Order, OrderStatus } from "../types/order";
 
-const statuses: readonly OrderStatus[] = ["pending", "processing", "finished"];
+const statuses: readonly OrderStatus[] = ["pending", "processing", "completed"];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null;

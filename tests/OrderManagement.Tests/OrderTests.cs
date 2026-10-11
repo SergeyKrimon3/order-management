@@ -35,24 +35,37 @@ public class OrderTests
     }
 
     [Fact]
-    public void MarkAsFinished_BeforeProcessing_Throws()
+    public void MarkAsCompleted_BeforeProcessing_Throws()
     {
         var order = Order.Create("Ada Lovelace", "Teclado", 10m);
 
-        Assert.Throws<InvalidOperationException>(order.MarkAsFinished);
+        Assert.Throws<InvalidOperationException>(order.MarkAsCompleted);
     }
 
     [Fact]
-    public void MarkAsProcessing_ThenFinished_FollowsTheRequiredSequence()
+    public void MarkAsProcessing_ThenCompleted_FollowsTheRequiredSequence()
     {
         var order = Order.Create("Ada Lovelace", "Teclado", 10m);
 
         var createdAt = order.UpdatedAt;
 
         order.MarkAsProcessing();
-        order.MarkAsFinished();
+        order.MarkAsCompleted();
 
-        Assert.Equal(OrderStatus.Finished, order.Status);
+        Assert.Equal(OrderStatus.Completed, order.Status);
         Assert.True(order.UpdatedAt >= createdAt);
+        Assert.Throws<InvalidOperationException>(order.MarkAsProcessing);
+        Assert.Throws<InvalidOperationException>(order.MarkAsCompleted);
+    }
+
+    [Fact]
+    public void Remaining_WaitsFiveSecondsFromProcessing()
+    {
+        var started = new DateTime(2026, 10, 11, 20, 4, 41, DateTimeKind.Unspecified);
+
+        Assert.Equal(TimeSpan.FromSeconds(5), OrderProcessing.Remaining(started, started));
+        Assert.Equal(TimeSpan.FromSeconds(3), OrderProcessing.Remaining(started, started.AddSeconds(2)));
+        Assert.Equal(TimeSpan.Zero, OrderProcessing.Remaining(started, started.AddSeconds(5)));
+        Assert.Equal(TimeSpan.Zero, OrderProcessing.Remaining(started, started.AddSeconds(6)));
     }
 }

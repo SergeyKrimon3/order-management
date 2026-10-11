@@ -75,9 +75,9 @@ public sealed class Order
         MoveTo(OrderStatus.Pending, OrderStatus.Processing);
     }
 
-    public void MarkAsFinished()
+    public void MarkAsCompleted()
     {
-        MoveTo(OrderStatus.Processing, OrderStatus.Finished);
+        MoveTo(OrderStatus.Processing, OrderStatus.Completed);
     }
 
     private void MoveTo(OrderStatus required, OrderStatus next)

@@ -20,7 +20,7 @@
     "saveError": "Could not place the order.",
     "pending": "Pending",
     "processing": "Processing",
-    "finished": "Finished",
+    "completed": "Completed",
     "stepPending": "Written at the counter",
     "stepProcessing": "Picking the product",
     "stepFinished": "Handed to the customer",

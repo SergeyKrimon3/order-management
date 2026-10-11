@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using OrderManagement.Domain.Orders;
+using OrderManagement.Infrastructure.Messaging;
 using OrderManagement.Infrastructure.Persistence;
 
 namespace OrderManagement.Infrastructure.Orders;
 
-public sealed class OrderService(OrdersDbContext database)
+public sealed class OrderService(OrdersDbContext database, IOrderCreatedPublisher publisher)
 {
     public async Task<Order> CreateAsync(
         string customer,
@@ -16,6 +17,7 @@ public sealed class OrderService(OrdersDbContext database)
         var order = Order.Create(customer, product, amount, image);
         database.Orders.Add(order);
         await database.SaveChangesAsync(cancellationToken);
+        await publisher.PublishAsync(OrderCreatedMessage.Create(order.Id), cancellationToken);
         return order;
     }
 
