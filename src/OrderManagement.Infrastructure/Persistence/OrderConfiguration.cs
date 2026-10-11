@@ -75,7 +75,7 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
             Customer = "Vitrine",
             Product = product,
             Amount = amount,
-            Status = OrderStatus.Pending,
+            Status = OrderStatus.Completed,
             CreatedAt = createdAt,
             UpdatedAt = createdAt,
             Image = image

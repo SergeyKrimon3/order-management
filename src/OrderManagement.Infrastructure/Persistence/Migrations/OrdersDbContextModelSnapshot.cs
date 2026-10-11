@@ -82,7 +82,7 @@ namespace OrderManagement.Infrastructure.Persistence.Migrations
                             Customer = "Vitrine",
                             Image = "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=900&q=80",
                             Product = "Sacola",
-                            Status = "pending",
+                            Status = "completed",
                             UpdatedAt = new DateTime(2026, 10, 11, 20, 4, 41, 0, DateTimeKind.Unspecified)
                         },
                         new
@@ -93,7 +93,7 @@ namespace OrderManagement.Infrastructure.Persistence.Migrations
                             Customer = "Vitrine",
                             Image = "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=900&q=80",
                             Product = "Fone",
-                            Status = "pending",
+                            Status = "completed",
                             UpdatedAt = new DateTime(2026, 10, 11, 20, 4, 41, 0, DateTimeKind.Unspecified)
                         },
                         new
@@ -104,7 +104,7 @@ namespace OrderManagement.Infrastructure.Persistence.Migrations
                             Customer = "Vitrine",
                             Image = "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=900&q=80",
                             Product = "Café",
-                            Status = "pending",
+                            Status = "completed",
                             UpdatedAt = new DateTime(2026, 10, 11, 20, 4, 41, 0, DateTimeKind.Unspecified)
                         },
                         new
@@ -115,7 +115,7 @@ namespace OrderManagement.Infrastructure.Persistence.Migrations
                             Customer = "Vitrine",
                             Image = "https://images.unsplash.com/photo-1531346878377-a5be20888e57?auto=format&fit=crop&w=900&q=80",
                             Product = "Caderno",
-                            Status = "pending",
+                            Status = "completed",
                             UpdatedAt = new DateTime(2026, 10, 11, 20, 4, 41, 0, DateTimeKind.Unspecified)
                         },
                         new
@@ -126,7 +126,7 @@ namespace OrderManagement.Infrastructure.Persistence.Migrations
                             Customer = "Vitrine",
                             Image = "https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=900&q=80",
                             Product = "Bloco de notas",
-                            Status = "pending",
+                            Status = "completed",
                             UpdatedAt = new DateTime(2026, 10, 11, 20, 4, 41, 0, DateTimeKind.Unspecified)
                         },
                         new
@@ -137,7 +137,7 @@ namespace OrderManagement.Infrastructure.Persistence.Migrations
                             Customer = "Vitrine",
                             Image = "https://images.unsplash.com/photo-1456735190827-d1262f71b8a3?auto=format&fit=crop&w=900&q=80",
                             Product = "Marcador",
-                            Status = "pending",
+                            Status = "completed",
                             UpdatedAt = new DateTime(2026, 10, 11, 20, 4, 41, 0, DateTimeKind.Unspecified)
                         });
                 });

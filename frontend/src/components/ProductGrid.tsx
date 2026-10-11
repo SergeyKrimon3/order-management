@@ -1,30 +1,36 @@
-import type { CatalogProduct } from "../catalog";
+import { catalog } from "../catalog";
 import { formatAmount } from "../format";
 import { t } from "../i18n";
+import type { Order } from "../types/order";
 import { Icon, iconPaths } from "./Icon";
 
 interface ProductGridProps {
-    products: readonly CatalogProduct[];
+    orders: readonly Order[];
     favoriteIds: readonly string[];
     cartId: string | null;
     onToggleFavorite: (id: string) => void;
     onAddToCart: (id: string) => void;
+    onOpen: (id: string) => void;
     onCreateOrder?: () => void;
 }
 
+function catalogIdFor(order: Order): string | null {
+    const match = catalog.find((product) => product.image === order.image);
+    return match?.id ?? null;
+}
+
 export function ProductGrid({
-    products,
+    orders,
     favoriteIds,
     cartId,
     onToggleFavorite,
     onAddToCart,
+    onOpen,
     onCreateOrder,
 }: ProductGridProps) {
-    if (products.length === 0) {
+    if (orders.length === 0 && !onCreateOrder) {
         return <p className="empty">{t("emptyFavorites")}</p>;
     }
-
-    const featuredId = cartId ?? products[0]?.id;
 
     return (
         <ul className="photo-grid">
@@ -36,29 +42,50 @@ export function ProductGrid({
                     </button>
                 </li>
             ) : null}
-            {products.map((product) => {
-                const favorite = favoriteIds.includes(product.id);
+            {orders.map((order) => {
+                const favorite = favoriteIds.includes(order.id);
+                const catalogId = catalogIdFor(order);
                 return (
-                    <li key={product.id} className="photo-card">
-                        <img src={product.image} alt={t(product.nameKey)} />
+                    <li key={order.id} className="photo-card">
+                        {order.image ? (
+                            <img src={order.image} alt={order.product} />
+                        ) : (
+                            <span className="photo-fallback">{order.product.slice(0, 1)}</span>
+                        )}
+                        <button
+                            type="button"
+                            className="photo-open"
+                            aria-label={order.product}
+                            onClick={() => onOpen(order.id)}
+                        />
                         <button
                             type="button"
                             className={favorite ? "heart-float is-on" : "heart-float"}
                             aria-label={favorite ? t("favoriteRemove") : t("favoriteAdd")}
                             aria-pressed={favorite}
-                            onClick={() => onToggleFavorite(product.id)}
+                            onClick={() => onToggleFavorite(order.id)}
                         >
                             <Icon paths={iconPaths.heart} filled={favorite} />
                         </button>
                         <div className="shade" />
                         <div className="cap">
-                            <strong>{t(product.nameKey)}</strong>
+                            <span className="cap-copy">
+                                <strong>{order.product}</strong>
+                                <small>{order.customer}</small>
+                            </span>
                             <button
                                 type="button"
-                                className={product.id === featuredId ? "buy blue" : "buy ghost"}
-                                onClick={() => onAddToCart(product.id)}
+                                className={catalogId !== null && catalogId === cartId ? "buy blue" : "buy ghost"}
+                                onClick={() => {
+                                    if (catalogId) {
+                                        onAddToCart(catalogId);
+                                        return;
+                                    }
+
+                                    onOpen(order.id);
+                                }}
                             >
-                                {formatAmount(product.price)}
+                                {formatAmount(order.amount)}
                             </button>
                         </div>
                     </li>

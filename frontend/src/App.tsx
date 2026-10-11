@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { listOrders } from "./api/orders";
-import { catalog, findProduct } from "./catalog";
+import { findProduct } from "./catalog";
 import { CartPanel } from "./components/CartPanel";
 import { CreateOrderModal } from "./components/CreateOrderModal";
 import { OrderDetail } from "./components/OrderDetail";
@@ -35,7 +35,7 @@ function readFavorites(): string[] {
             return [];
         }
 
-        return parsed.filter((item): item is string => typeof item === "string" && findProduct(item) !== null);
+        return parsed.filter((item): item is string => typeof item === "string" && item.length > 0);
     } catch {
         return [];
     }
@@ -101,8 +101,14 @@ export default function App() {
     }
 
     const selected = orders.find((order) => order.id === selectedId) ?? null;
-    const visibleProducts =
-        screen === "favorites" ? catalog.filter((product) => favoriteIds.includes(product.id)) : catalog;
+    const completedOrders = orders.filter((order) => order.status === "completed");
+    const favoriteOrders = completedOrders.filter((order) => favoriteIds.includes(order.id));
+    const visibleOrders = screen === "favorites" ? favoriteOrders : completedOrders;
+
+    function openOrder(id: string) {
+        setSelectedId(id);
+        setScreen("orders");
+    }
 
     return (
         <div className="noite">
@@ -119,7 +125,7 @@ export default function App() {
                     </section>
                 ) : (
                     <ProductGrid
-                        products={visibleProducts}
+                        orders={visibleOrders}
                         favoriteIds={favoriteIds}
                         cartId={cartId}
                         onToggleFavorite={toggleFavorite}
@@ -127,6 +133,7 @@ export default function App() {
                             setCartId(id);
                             setScreen("catalog");
                         }}
+                        onOpen={openOrder}
                         onCreateOrder={screen === "catalog" ? () => setCreateOpen(true) : undefined}
                     />
                 )}
@@ -139,8 +146,8 @@ export default function App() {
                         aria-label={t("favorites")}
                         onClick={() => setScreen(screen === "favorites" ? "catalog" : "favorites")}
                     >
-                        <Icon paths={iconPaths.heart} filled={favoriteIds.length > 0} />
-                        {favoriteIds.length > 0 ? <span className="badge">{favoriteIds.length}</span> : null}
+                        <Icon paths={iconPaths.heart} filled={favoriteOrders.length > 0} />
+                        {favoriteOrders.length > 0 ? <span className="badge">{favoriteOrders.length}</span> : null}
                     </button>
                     <button
                         type="button"
