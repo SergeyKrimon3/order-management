@@ -23,7 +23,10 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseHttpsRedirection();
+if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_HTTPS_PORTS")))
+{
+    app.UseHttpsRedirection();
+}
 app.MapHealthChecks("/health");
 app.MapControllers();
 

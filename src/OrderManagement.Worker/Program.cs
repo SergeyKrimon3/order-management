@@ -1,7 +1,12 @@
 using OrderManagement.Worker;
 
-var builder = Host.CreateApplicationBuilder(args);
-builder.Services.AddHostedService<Worker>();
+var builder = WebApplication.CreateBuilder(args);
 
-var host = builder.Build();
-host.Run();
+builder.Services.AddHostedService<Worker>();
+builder.Services.AddHealthChecks();
+
+var app = builder.Build();
+
+app.MapHealthChecks("/health");
+
+app.Run();
