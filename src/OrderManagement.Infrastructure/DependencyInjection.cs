@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using OrderManagement.Infrastructure.Orders;
 using OrderManagement.Infrastructure.Persistence;
 
 namespace OrderManagement.Infrastructure;
@@ -21,6 +22,8 @@ public static class DependencyInjection
 
         services.AddDbContext<OrdersDbContext>(options =>
             options.UseNpgsql(connectionString));
+
+        services.AddScoped<OrderService>();
 
         services.AddHealthChecks()
             .AddDbContextCheck<OrdersDbContext>("postgresql");
