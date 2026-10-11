@@ -4,8 +4,11 @@ import { catalog, findProduct } from "./catalog";
 import { CartPanel } from "./components/CartPanel";
 import { OrderDetail } from "./components/OrderDetail";
 import { OrderList } from "./components/OrderList";
+import { OrderRail } from "./components/OrderRail";
 import { ProductGrid } from "./components/ProductGrid";
 import { StoreHeader, type Screen } from "./components/StoreHeader";
+import { ThemeToggle } from "./components/ThemeToggle";
+import { Icon, iconPaths } from "./components/Icon";
 import { t } from "./i18n";
 import type { Order } from "./types/order";
 
@@ -88,29 +91,53 @@ export default function App() {
   const selected = orders.find((order) => order.id === selectedId) ?? null;
   const visibleProducts =
     screen === "favorites" ? catalog.filter((product) => favoriteIds.includes(product.id)) : catalog;
-  const heading =
-    screen === "orders" ? t("orders") : screen === "cart" ? t("cart") : screen === "favorites" ? t("favorites") : t("catalog");
 
   return (
-    <div className="shell">
-      <StoreHeader
-        screen={screen}
-        favoriteCount={favoriteIds.length}
-        cartCount={cartId ? 1 : 0}
-        onNavigate={setScreen}
-      />
-      <main className="page">
-        <h1>{heading}</h1>
-        {screen === "catalog" ? <p className="lede">{t("subtitle")}</p> : null}
-        {screen === "catalog" || screen === "favorites" ? (
+    <div className="noite">
+      <div className="noite-main">
+        <StoreHeader screen={screen} onNavigate={setScreen} />
+        {screen === "orders" ? (
+          <section className="orders-board">
+            <h1>{t("orders")}</h1>
+            {loadError ? <p className="field-error">{loadError}</p> : null}
+            <OrderList orders={orders} selectedId={selectedId} onSelect={setSelectedId} />
+            {selected ? <OrderDetail order={selected} onClose={() => setSelectedId(null)} /> : null}
+          </section>
+        ) : (
           <ProductGrid
             products={visibleProducts}
             favoriteIds={favoriteIds}
             cartId={cartId}
             onToggleFavorite={toggleFavorite}
-            onAddToCart={setCartId}
+            onAddToCart={(id) => {
+              setCartId(id);
+              setScreen("catalog");
+            }}
           />
-        ) : null}
+        )}
+      </div>
+      <aside className="noite-rail">
+        <div className="rail-tools">
+          <button
+            type="button"
+            className={screen === "favorites" ? "icon-button active" : "icon-button"}
+            aria-label={t("favorites")}
+            onClick={() => setScreen(screen === "favorites" ? "catalog" : "favorites")}
+          >
+            <Icon paths={iconPaths.heart} filled={favoriteIds.length > 0} />
+            {favoriteIds.length > 0 ? <span className="badge">{favoriteIds.length}</span> : null}
+          </button>
+          <button
+            type="button"
+            className={screen === "cart" ? "icon-button active" : "icon-button"}
+            aria-label={t("cart")}
+            onClick={() => setScreen(screen === "cart" ? "catalog" : "cart")}
+          >
+            <Icon paths={iconPaths.cart} />
+            {cartId ? <span className="badge">1</span> : null}
+          </button>
+          <ThemeToggle />
+        </div>
         {screen === "cart" ? (
           <CartPanel
             product={cartId ? findProduct(cartId) : null}
@@ -122,15 +149,21 @@ export default function App() {
               void refresh();
             }}
           />
-        ) : null}
-        {screen === "orders" ? (
-          <section className="panel orders">
+        ) : (
+          <>
+            <h2>{t("ordersNow")}</h2>
             {loadError ? <p className="field-error">{loadError}</p> : null}
-            <OrderList orders={orders} selectedId={selectedId} onSelect={setSelectedId} />
-            {selected ? <OrderDetail order={selected} onClose={() => setSelectedId(null)} /> : null}
-          </section>
-        ) : null}
-      </main>
+            <OrderRail
+              orders={orders}
+              selectedId={selectedId}
+              onSelect={(id) => {
+                setSelectedId(id);
+                setScreen("orders");
+              }}
+            />
+          </>
+        )}
+      </aside>
     </div>
   );
 }

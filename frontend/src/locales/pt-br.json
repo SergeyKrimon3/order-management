@@ -11,6 +11,7 @@
   "status": "Status",
   "createdAt": "Data",
   "orders": "Pedidos",
+  "ordersNow": "Pedidos agora",
   "empty": "Nenhum pedido anotado ainda.",
   "detail": "Detalhe do pedido",
   "close": "Fechar",

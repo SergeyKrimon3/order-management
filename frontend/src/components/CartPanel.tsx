@@ -4,7 +4,6 @@ import type { CatalogProduct } from "../catalog";
 import { formatAmount } from "../format";
 import { t } from "../i18n";
 import type { Order } from "../types/order";
-import { Icon, iconPaths } from "./Icon";
 
 interface CartPanelProps {
   product: CatalogProduct | null;
@@ -21,7 +20,7 @@ export function CartPanel({ product, onBrowse, onCreated }: CartPanelProps) {
     return (
       <section className="panel cart-empty">
         <p className="empty">{t("emptyCart")}</p>
-        <button type="button" className="primary-button" onClick={onBrowse}>
+        <button type="button" className="buy blue" onClick={onBrowse}>
           {t("backToCatalog")}
         </button>
       </section>
@@ -60,9 +59,7 @@ export function CartPanel({ product, onBrowse, onCreated }: CartPanelProps) {
     <form className="panel form cart-panel" onSubmit={handleSubmit}>
       <p className="hint">{t("cartHint")}</p>
       <div className="cart-item">
-        <span className="product-mark compact">
-          <Icon paths={iconPaths[product.icon]} />
-        </span>
+        <img src={product.image} alt="" />
         <div>
           <strong>{t(product.nameKey)}</strong>
           <span>{formatAmount(product.price)}</span>
@@ -77,7 +74,7 @@ export function CartPanel({ product, onBrowse, onCreated }: CartPanelProps) {
         />
       </label>
       {error ? <p className="field-error">{error}</p> : null}
-      <button type="submit" className="primary-button" disabled={saving}>
+      <button type="submit" className="buy blue" disabled={saving}>
         {saving ? t("checkingOut") : t("checkout")}
       </button>
     </form>

@@ -11,6 +11,7 @@
   "status": "Status",
   "createdAt": "Date",
   "orders": "Orders",
+  "ordersNow": "Orders now",
   "empty": "No orders yet.",
   "detail": "Order detail",
   "close": "Close",

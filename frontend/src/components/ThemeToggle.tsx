@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 import { t } from "../i18n";
 
 type Theme = "light" | "dark";
 
-const storageKey = "theme";
+const storageKey = "balcao-theme";
 
 function readTheme(): Theme {
-  const stored = localStorage.getItem(storageKey);
-  return stored === "dark" ? "dark" : "light";
+  return localStorage.getItem(storageKey) === "light" ? "light" : "dark";
 }
 
 function SunIcon() {
@@ -37,13 +37,44 @@ export function ThemeToggle() {
 
   const isDark = theme === "dark";
 
+  function changeTheme(next: Theme, origin: HTMLButtonElement) {
+    const rect = origin.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    const radius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+    const root = document.documentElement;
+    root.style.setProperty("--theme-x", `${x}px`);
+    root.style.setProperty("--theme-y", `${y}px`);
+    root.style.setProperty("--theme-r", `${Math.ceil(radius)}px`);
+
+    const apply = () => {
+      root.dataset.theme = next;
+      localStorage.setItem(storageKey, next);
+      flushSync(() => {
+        setTheme(next);
+      });
+    };
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion || typeof document.startViewTransition !== "function") {
+      apply();
+      return;
+    }
+
+    try {
+      document.startViewTransition(apply);
+    } catch {
+      apply();
+    }
+  }
+
   return (
     <button
       type="button"
       className={isDark ? "theme-toggle is-dark" : "theme-toggle"}
       aria-pressed={isDark}
       aria-label={isDark ? t("themeToLight") : t("themeToDark")}
-      onClick={() => setTheme(isDark ? "light" : "dark")}
+      onClick={(event) => changeTheme(isDark ? "light" : "dark", event.currentTarget)}
     >
       <span className="theme-toggle-knob">
         {isDark ? <MoonIcon /> : <SunIcon />}

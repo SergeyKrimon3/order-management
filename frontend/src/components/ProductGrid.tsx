@@ -22,32 +22,35 @@ export function ProductGrid({
     return <p className="empty">{t("emptyFavorites")}</p>;
   }
 
+  const featuredId = cartId ?? products[0]?.id;
+
   return (
-    <ul className="catalog-grid">
+    <ul className="photo-grid">
       {products.map((product) => {
         const favorite = favoriteIds.includes(product.id);
-        const inCart = cartId === product.id;
         return (
-          <li key={product.id} className="product-card">
-            <div className="product-mark">
-              <Icon paths={iconPaths[product.icon]} />
+          <li key={product.id} className="photo-card">
+            <img src={product.image} alt={t(product.nameKey)} />
+            <button
+              type="button"
+              className={favorite ? "heart-float is-on" : "heart-float"}
+              aria-label={favorite ? t("favoriteRemove") : t("favoriteAdd")}
+              aria-pressed={favorite}
+              onClick={() => onToggleFavorite(product.id)}
+            >
+              <Icon paths={iconPaths.heart} filled={favorite} />
+            </button>
+            <div className="shade" />
+            <div className="cap">
+              <strong>{t(product.nameKey)}</strong>
               <button
                 type="button"
-                className={favorite ? "heart-button is-on" : "heart-button"}
-                aria-label={favorite ? t("favoriteRemove") : t("favoriteAdd")}
-                aria-pressed={favorite}
-                onClick={() => onToggleFavorite(product.id)}
+                className={product.id === featuredId ? "buy blue" : "buy ghost"}
+                onClick={() => onAddToCart(product.id)}
               >
-                <Icon paths={iconPaths.heart} filled={favorite} />
+                {formatAmount(product.price)}
               </button>
             </div>
-            <div className="product-copy">
-              <strong>{t(product.nameKey)}</strong>
-              <span>{formatAmount(product.price)}</span>
-            </div>
-            <button type="button" className="primary-button" onClick={() => onAddToCart(product.id)}>
-              {inCart ? t("inCart") : t("addToCart")}
-            </button>
           </li>
         );
       })}
