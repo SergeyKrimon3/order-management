@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using OrderManagement.Infrastructure.Messaging;
+using OrderManagement.Infrastructure.Orders;
 using OrderManagement.Infrastructure.Persistence;
 
 namespace OrderManagement.Infrastructure;
@@ -21,6 +23,19 @@ public static class DependencyInjection
 
         services.AddDbContext<OrdersDbContext>(options =>
             options.UseNpgsql(connectionString));
+
+        var rabbit = configuration.GetSection(RabbitMqOptions.SectionName);
+        services.AddSingleton(new RabbitMqOptions
+        {
+            Host = rabbit["Host"] ?? "localhost",
+            Port = int.TryParse(rabbit["Port"], out var port) ? port : 5672,
+            Username = rabbit["Username"] ?? "orders",
+            Password = rabbit["Password"] ?? "orders",
+            Queue = rabbit["Queue"] ?? "order-created"
+        });
+        services.AddSingleton<IOrderCreatedPublisher, RabbitMqOrderCreatedPublisher>();
+        services.AddScoped<OrderService>();
+        services.AddScoped<OrderCreatedProcessor>();
 
         services.AddHealthChecks()
             .AddDbContextCheck<OrdersDbContext>("postgresql");

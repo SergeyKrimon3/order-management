@@ -4,6 +4,7 @@ services:
   postgres:
     image: postgres:17-alpine
     container_name: postgres
+    command: ["postgres", "-c", "timezone=America/Sao_Paulo"]
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -18,6 +19,22 @@ services:
       timeout: 5s
       retries: 10
       start_period: 5s
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-orders}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-orders}
+    ports:
+      - "127.0.0.1:${RABBITMQ_PORT:-5672}:5672"
+      - "127.0.0.1:${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
   pgadmin:
     image: dpage/pgadmin4:9
@@ -46,11 +63,17 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
+      TZ: America/Sao_Paulo
       ConnectionStrings__Orders: Host=postgres;Port=5432;Database=${POSTGRES_DB:-orders};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Username: ${RABBITMQ_USER:-orders}
+      RabbitMQ__Password: ${RABBITMQ_PASSWORD:-orders}
     ports:
       - "127.0.0.1:${API_PORT:-8080}:8080"
     depends_on:
       postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
@@ -67,10 +90,17 @@ services:
     environment:
       DOTNET_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
+      TZ: America/Sao_Paulo
+      ConnectionStrings__Orders: Host=postgres;Port=5432;Database=${POSTGRES_DB:-orders};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Username: ${RABBITMQ_USER:-orders}
+      RabbitMQ__Password: ${RABBITMQ_PASSWORD:-orders}
     ports:
       - "127.0.0.1:${WORKER_PORT:-8081}:8080"
     depends_on:
       api:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
