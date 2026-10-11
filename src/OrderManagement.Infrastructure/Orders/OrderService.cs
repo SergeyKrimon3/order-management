@@ -10,9 +10,10 @@ public sealed class OrderService(OrdersDbContext database)
         string customer,
         string product,
         decimal amount,
+        string? image,
         CancellationToken cancellationToken)
     {
-        var order = Order.Create(customer, product, amount);
+        var order = Order.Create(customer, product, amount, image);
         database.Orders.Add(order);
         await database.SaveChangesAsync(cancellationToken);
         return order;

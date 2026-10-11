@@ -2,7 +2,7 @@ using OrderManagement.Domain.Orders;
 
 namespace OrderManagement.Api.Contracts;
 
-public sealed record CreateOrderRequest(string Customer, string Product, decimal Amount);
+public sealed record CreateOrderRequest(string Customer, string Product, decimal Amount, string? Image);
 
 public sealed record OrderResponse(
     Guid Id,
@@ -10,7 +10,9 @@ public sealed record OrderResponse(
     string Product,
     decimal Amount,
     OrderStatus Status,
-    DateTime CreatedAt)
+    DateTime CreatedAt,
+    DateTime UpdatedAt,
+    string? Image)
 {
     public static OrderResponse From(Order order)
     {
@@ -20,6 +22,8 @@ public sealed record OrderResponse(
             order.Product,
             order.Amount,
             order.Status,
-            order.CreatedAt);
+            order.CreatedAt,
+            order.UpdatedAt,
+            order.Image);
     }
 }

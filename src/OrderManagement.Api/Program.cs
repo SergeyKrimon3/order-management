@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using OrderManagement.Infrastructure;
@@ -10,7 +11,7 @@ LocalDotEnv.ApplyOrdersConnection(builder.Configuration, builder.Environment.Con
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
     });
 builder.Services.AddOpenApi();
 builder.Services.AddInfrastructure(builder.Configuration);

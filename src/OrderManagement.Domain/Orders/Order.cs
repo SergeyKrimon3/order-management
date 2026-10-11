@@ -14,11 +14,15 @@ public sealed class Order
 
     public DateTime CreatedAt { get; private set; }
 
+    public DateTime UpdatedAt { get; private set; }
+
+    public string? Image { get; private set; }
+
     private Order()
     {
     }
 
-    public static Order Create(string customer, string product, decimal amount)
+    public static Order Create(string customer, string product, decimal amount, string? image = null)
     {
         if (string.IsNullOrWhiteSpace(customer))
         {
@@ -35,25 +39,45 @@ public sealed class Order
             throw new ArgumentOutOfRangeException(nameof(amount), "Amount must be greater than zero.");
         }
 
+        var now = BrazilTime.Now();
         return new Order
         {
-            Id = Guid.CreateVersion7(),
+            Id = Guid.NewGuid(),
             Customer = customer.Trim(),
             Product = product.Trim(),
             Amount = decimal.Round(amount, 2, MidpointRounding.AwayFromZero),
-            Status = OrderStatus.Pendente,
-            CreatedAt = DateTime.UtcNow
+            Status = OrderStatus.Pending,
+            CreatedAt = now,
+            UpdatedAt = now,
+            Image = NormalizeImage(image)
         };
+    }
+
+    private static string? NormalizeImage(string? image)
+    {
+        if (string.IsNullOrWhiteSpace(image))
+        {
+            return null;
+        }
+
+        var trimmed = image.Trim();
+        if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri)
+            || (uri.Scheme != Uri.UriSchemeHttps && uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != "data"))
+        {
+            throw new ArgumentException("Image must be an absolute URL.", nameof(image));
+        }
+
+        return trimmed;
     }
 
     public void MarkAsProcessing()
     {
-        MoveTo(OrderStatus.Pendente, OrderStatus.Processando);
+        MoveTo(OrderStatus.Pending, OrderStatus.Processing);
     }
 
     public void MarkAsFinished()
     {
-        MoveTo(OrderStatus.Processando, OrderStatus.Finalizado);
+        MoveTo(OrderStatus.Processing, OrderStatus.Finished);
     }
 
     private void MoveTo(OrderStatus required, OrderStatus next)
@@ -64,5 +88,6 @@ public sealed class Order
         }
 
         Status = next;
+        UpdatedAt = BrazilTime.Now();
     }
 }

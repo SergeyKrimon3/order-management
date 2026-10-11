@@ -5,24 +5,24 @@ import ptBr from "./locales/pt-br.json" with { type: "json" };
 export type MessageKey = keyof typeof ptBr;
 
 const catalogs: Record<string, Record<MessageKey, string>> = {
-  en,
-  es,
-  "pt-BR": ptBr,
+    en,
+    es,
+    "pt-BR": ptBr,
 };
 
 function catalog(): Record<MessageKey, string> {
-  const language = navigator.language.toLowerCase();
-  if (language.startsWith("pt")) {
-    return catalogs["pt-BR"];
-  }
+    const language = navigator.language.toLowerCase();
+    if (language.startsWith("pt")) {
+        return catalogs["pt-BR"];
+    }
 
-  if (language.startsWith("es")) {
-    return catalogs.es;
-  }
+    if (language.startsWith("es")) {
+        return catalogs.es;
+    }
 
-  return catalogs.en;
+    return catalogs.en;
 }
 
 export function t(key: MessageKey): string {
-  return catalog()[key];
+    return catalog()[key];
 }
