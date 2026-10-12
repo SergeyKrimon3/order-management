@@ -53,6 +53,10 @@ export function formatTime(value: string): string {
     }).format(new Date(value));
 }
 
+export function formatDayAndTime(value: string): string {
+    return `${formatDay(value)} - ${formatTime(value)}`;
+}
+
 export function parseAmount(value: string): number | null {
     const normalized = value.trim().replace(",", ".");
     if (normalized.length === 0) {

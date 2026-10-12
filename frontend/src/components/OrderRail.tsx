@@ -1,5 +1,5 @@
 import { findProductByLabel, type CatalogProduct } from "../catalog";
-import { formatAmount, formatDay, formatTime, statusLabel } from "../format";
+import { formatAmount, formatDayAndTime, statusLabel } from "../format";
 import { t } from "../i18n";
 import type { Order } from "../types/order";
 import { WorkerDots } from "./WorkerDots";
@@ -41,7 +41,7 @@ export function OrderRail({ orders, onSelect }: OrderRailProps) {
                                     {order.product} · {formatAmount(order.amount)}
                                 </small>
                                 <small>
-                                    {formatDay(order.createdAt)} {formatTime(order.createdAt)}
+                                    {formatDayAndTime(order.createdAt)}
                                 </small>
                             </span>
                             <span className="order-lead">

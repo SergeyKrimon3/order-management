@@ -1,5 +1,5 @@
 import { useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { formatAmount, formatDate, statusLabel, stepCaption } from "../format";
+import { formatAmount, formatDayAndTime, statusLabel, stepCaption } from "../format";
 import { t } from "../i18n";
 import type { Order, OrderStatus } from "../types/order";
 import { FilterCalendar } from "./FilterCalendar";
@@ -311,7 +311,7 @@ export function OrderList({ orders, onSelect }: OrderListProps) {
                                         <WorkerDots status={order.status} />
                                     </span>
                                 </td>
-                                <td>{formatDate(order.createdAt)}</td>
+                                <td>{formatDayAndTime(order.createdAt)}</td>
                                 <td className="actions-col">
                                     <ViewOrder id={order.id} />
                                 </td>
