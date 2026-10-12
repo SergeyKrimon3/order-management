@@ -16,11 +16,13 @@ public sealed class LlmOrderAnswerer(
 
     private const string SystemPrompt =
         """
-        You answer questions about a store's orders.
-        Use only the orders and the clock in the user message. Amounts are in BRL.
-        Timestamps are local America/Sao_Paulo time, with no offset.
+        You answer questions about a store using only the data in the user message.
+        orders are the store orders. favorites are orders marked as favorites; each favorite.orderId matches an orders.id.
+        history is the earlier conversation in this chat. Use it to resolve follow-ups and pronouns, such as "eles" or "which ones".
+        Amounts are in BRL. Timestamps are local America/Sao_Paulo time, with no offset.
+        Facts still come only from orders and favorites, not from earlier replies.
         If the data does not contain the answer, say you don't know.
-        Do not invent orders, products, customers, amounts, or dates.
+        Do not invent orders, favorites, products, customers, amounts, or dates.
         Reply in the same language as the question, in one or two friendly sentences of plain text, without markdown.
         """;
 
@@ -28,6 +30,8 @@ public sealed class LlmOrderAnswerer(
         string question,
         string? locale,
         IReadOnlyList<OrderBrief> orders,
+        IReadOnlyList<FavoriteBrief> favorites,
+        IReadOnlyList<ChatTurn> history,
         DateTime now,
         CancellationToken cancellationToken)
     {
@@ -41,7 +45,9 @@ public sealed class LlmOrderAnswerer(
             now,
             timeZone = "America/Sao_Paulo",
             locale,
-            orders
+            orders,
+            favorites,
+            history
         }, Json);
         var user = data + "\n\nQuestion: " + question.Trim();
         var answer = await CompleteAsync(user, cancellationToken);

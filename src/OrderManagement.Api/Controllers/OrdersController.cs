@@ -33,7 +33,11 @@ public sealed class OrdersController(
 
         try
         {
-            var answer = await insights.AskAsync(request.Question, request.Locale, cancellationToken);
+            var answer = await insights.AskAsync(
+                request.Question,
+                request.Locale,
+                ReadHistory(request.History),
+                cancellationToken);
             return Ok(new AskOrderResponse(answer));
         }
         catch (OrderQuestionException exception)
@@ -112,5 +116,45 @@ public sealed class OrdersController(
         {
             return BadRequest(new { message = exception.Message });
         }
+    }
+
+    private static IReadOnlyList<ChatTurn> ReadHistory(IReadOnlyList<AskTurnRequest>? history)
+    {
+        if (history is null || history.Count == 0)
+        {
+            return [];
+        }
+
+        return history
+            .TakeLast(20)
+            .Select(turn => new ChatTurn(NormalizeRole(turn.Role), TrimTurn(turn.Text)))
+            .Where(turn => turn.Role.Length > 0 && turn.Text.Length > 0)
+            .ToArray();
+    }
+
+    private static string NormalizeRole(string? role)
+    {
+        if (string.Equals(role, "user", StringComparison.OrdinalIgnoreCase))
+        {
+            return "user";
+        }
+
+        if (string.Equals(role, "assistant", StringComparison.OrdinalIgnoreCase))
+        {
+            return "assistant";
+        }
+
+        return string.Empty;
+    }
+
+    private static string TrimTurn(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return string.Empty;
+        }
+
+        var trimmed = text.Trim();
+        return trimmed.Length <= 1000 ? trimmed : trimmed[..1000];
     }
 }

@@ -37,7 +37,7 @@ Se pular este passo, o `docker compose` usa os mesmos padrões do `.env.example`
 | --- | --- | --- |
 | `POSTGRES_USER` | `postgres` | Usuário do PostgreSQL |
 | `POSTGRES_PASSWORD` | `postgres` | Senha do PostgreSQL |
-| `POSTGRES_DB` | `orders` | Nome do banco |
+| `POSTGRES_DB` | `tmb-local` | Nome do banco |
 | `POSTGRES_PORT` | `5432` | Porta do banco na sua máquina |
 | `PGADMIN_DEFAULT_EMAIL` | `admin@local.dev` | Login do pgAdmin |
 | `PGADMIN_DEFAULT_PASSWORD` | `admin` | Senha do pgAdmin |
@@ -78,13 +78,13 @@ Os cinco serviços precisam estar `healthy`: `postgres`, `api`, `worker`, `front
 
 ## 6. Abrir o banco
 
-A tabela `orders` fica em `orders` → `Schemas` → `public` → `Tables`. As colunas são `id`, `customer`, `product`, `amount`, `status` e `created_at`.
+As tabelas `orders` e `favorites` ficam em `tmb-local` → `Schemas` → `public` → `Tables`.
 
 No pgAdmin:
 
 1. Abra http://localhost:5050
 2. Entre com `admin@local.dev` e senha `admin`
-3. Cadastre o servidor com host `postgres`, porta `5432`, banco `orders`, usuário `postgres` e senha `postgres`
+3. Cadastre o servidor com host `postgres`, porta `5432`, banco `tmb-local`, usuário `postgres` e senha `postgres`
 
 No DBeaver, na sua máquina:
 
@@ -92,7 +92,7 @@ No DBeaver, na sua máquina:
 | --- | --- |
 | Host | `localhost` |
 | Port | `5432` |
-| Database | `orders` |
+| Database | `tmb-local` |
 | Username | `postgres` |
 | Password | `postgres` |
 
@@ -108,7 +108,7 @@ O volume do banco é mantido. Para apagar os dados também: `docker compose down
 
 ## Perguntas sobre os pedidos
 
-Na tela de Pedidos, o bloco **Pergunte sobre os pedidos** manda a pergunta para um modelo de linguagem, junto com os pedidos lidos do PostgreSQL e o horário de Brasília. A frase da resposta é do modelo. Sem `LLM_API_KEY`, o endpoint não responde.
+O chat **Pergunte a IA** manda a pergunta para um modelo de linguagem, junto com os pedidos, os favoritos lidos do PostgreSQL, as mensagens anteriores da conversa aberta e o horário de Brasília. A frase da resposta é do modelo. Sem `LLM_API_KEY`, o endpoint não responde.
 
 ```env
 LLM_API_KEY=
@@ -128,7 +128,7 @@ Para um modelo local compatível com a API da OpenAI, aponte `LLM_BASE_URL` para
 | React + Vite | A tela é um CRUD. Não há renderização no servidor. |
 | Docker Compose | Sobe API, worker, frontend, PostgreSQL e pgAdmin com um comando. Segredos ficam em variáveis de ambiente. |
 | pgAdmin | Administração do banco dentro do Compose. O DBeaver continua disponível na máquina local. |
-| LLM opcional | Recebe os pedidos reais e escreve a resposta. Não há perguntas nem frases prontas. |
+| LLM opcional | Recebe os pedidos e os favoritos reais e escreve a resposta. Não há perguntas nem frases prontas. |
 
 ## Estrutura
 

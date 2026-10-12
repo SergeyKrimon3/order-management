@@ -88,11 +88,12 @@ export function AskModal({ onClose }: AskModalProps) {
 
         appendMessage("user", trimmed);
         setQuestion("");
+        const history = messages.map((message) => ({ role: message.role, text: message.text }));
         const controller = new AbortController();
         requestRef.current = controller;
         setAsking(true);
         try {
-            appendMessage("assistant", await askOrders(trimmed, controller.signal));
+            appendMessage("assistant", await askOrders(trimmed, history, controller.signal));
         } catch (caught) {
             if (caught instanceof DOMException && caught.name === "AbortError") {
                 return;

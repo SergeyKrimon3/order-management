@@ -8,13 +8,13 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-orders}
+      POSTGRES_DB: ${POSTGRES_DB:-tmb-local}
     ports:
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-orders}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-tmb-local}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -64,7 +64,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       TZ: America/Sao_Paulo
-      ConnectionStrings__Orders: Host=postgres;Port=5432;Database=${POSTGRES_DB:-orders};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      ConnectionStrings__Orders: Host=postgres;Port=5432;Database=${POSTGRES_DB:-tmb-local};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
       RabbitMQ__Host: rabbitmq
       RabbitMQ__Username: ${RABBITMQ_USER:-admin}
       RabbitMQ__Password: ${RABBITMQ_PASSWORD:-admin}
@@ -94,7 +94,7 @@ services:
       DOTNET_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       TZ: America/Sao_Paulo
-      ConnectionStrings__Orders: Host=postgres;Port=5432;Database=${POSTGRES_DB:-orders};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      ConnectionStrings__Orders: Host=postgres;Port=5432;Database=${POSTGRES_DB:-tmb-local};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
       RabbitMQ__Host: rabbitmq
       RabbitMQ__Username: ${RABBITMQ_USER:-admin}
       RabbitMQ__Password: ${RABBITMQ_PASSWORD:-admin}
