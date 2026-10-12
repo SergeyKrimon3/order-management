@@ -23,7 +23,8 @@ function isOrder(value: unknown): value is Order {
         isOrderStatus(value.status) &&
         typeof value.createdAt === "string" &&
         typeof value.updatedAt === "string" &&
-        (value.image === null || typeof value.image === "string")
+        (value.image === null || typeof value.image === "string") &&
+        (value.repeatOf === null || typeof value.repeatOf === "string")
     );
 }
 

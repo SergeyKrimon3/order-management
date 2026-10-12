@@ -81,14 +81,21 @@ img { max-width: 100%; }
 }
 
 .photo-card {
-    position: relative;
-    min-height: 250px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
     border-radius: 18px;
     overflow: hidden;
+    background: var(--color-surface);
+}
+
+.photo-frame {
+    position: relative;
+    min-height: 220px;
     background: #1a1a1a;
 }
 
-.photo-card img,
+.photo-frame img,
 .photo-fallback,
 .photo-open {
     position: absolute;
@@ -97,7 +104,7 @@ img { max-width: 100%; }
     height: 100%;
 }
 
-.photo-card img { object-fit: cover; }
+.photo-frame img { object-fit: cover; }
 
 .photo-fallback {
     display: grid;
@@ -192,10 +199,68 @@ img { max-width: 100%; }
 }
 
 .cap-copy { display: grid; min-width: 0; }
-.cap-copy strong,
-.cap-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cap strong { font-size: 18px; font-weight: 520; }
-.cap-copy small { font-size: 12px; opacity: 0.82; }
+.cap-copy strong {
+    font-size: 18px;
+    font-weight: 520;
+    line-height: 1.2;
+    white-space: normal;
+}
+.cap-copy small {
+    font-size: 11px;
+    opacity: 0.82;
+    white-space: normal;
+    word-break: break-all;
+}
+
+.reorder-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+}
+
+.reorder-action {
+    width: fit-content;
+    border: 0;
+    border-radius: 8px;
+    background: var(--blue);
+    color: var(--black);
+    padding: 10px 16px;
+    font-size: 16px;
+    font-weight: 500;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.reorder-action:hover,
+.reorder-action:focus-visible {
+    filter: brightness(0.92);
+    outline: none;
+}
+
+.reorder-action:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.reorder-price {
+    display: grid;
+    justify-items: end;
+    gap: 2px;
+    text-align: right;
+}
+
+.reorder-amount {
+    font-weight: 650;
+    white-space: nowrap;
+}
+
+.reorder-created {
+    font-size: 11px;
+    font-weight: 450;
+    color: var(--color-muted);
+}
 
 .heart-float {
     position: absolute;
@@ -680,5 +745,5 @@ html::view-transition-old(root) {
 
 @media (max-width: 640px) {
     .photo-grid { grid-template-columns: 1fr; }
-    .photo-card, .create-order { min-height: 320px; }
+    .photo-frame, .create-order { min-height: 320px; }
 }

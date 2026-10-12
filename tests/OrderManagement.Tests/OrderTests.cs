@@ -13,6 +13,7 @@ public class OrderTests
         Assert.Equal("Ada Lovelace", order.Customer);
         Assert.Equal(150.50m, order.Amount);
         Assert.Null(order.Image);
+        Assert.Null(order.RepeatOfId);
         Assert.Equal(order.CreatedAt, order.UpdatedAt);
         Assert.InRange(order.CreatedAt, BrazilTime.Now().AddSeconds(-2), BrazilTime.Now().AddSeconds(2));
         Assert.NotEqual(Guid.Empty, order.Id);

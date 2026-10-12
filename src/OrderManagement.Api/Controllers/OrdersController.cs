@@ -39,6 +39,7 @@ public sealed class OrdersController(OrderService orders) : ControllerBase
                 request.Product,
                 request.Amount,
                 request.Image,
+                request.RepeatOf,
                 cancellationToken);
 
             return CreatedAtAction(nameof(Get), new { id = order.Id }, OrderResponse.From(order));

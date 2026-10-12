@@ -9,6 +9,7 @@ export interface Order {
     createdAt: string;
     updatedAt: string;
     image: string | null;
+    repeatOf: string | null;
 }
 
 export interface CreateOrderInput {
@@ -16,4 +17,5 @@ export interface CreateOrderInput {
     product: string;
     amount: number;
     image: string | null;
+    repeatOf?: string | null;
 }

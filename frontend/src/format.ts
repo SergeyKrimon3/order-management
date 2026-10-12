@@ -26,6 +26,15 @@ export function formatDate(value: string): string {
     }).format(new Date(value));
 }
 
+export function formatDay(value: string): string {
+    return new Intl.DateTimeFormat("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        timeZone: "America/Sao_Paulo",
+    }).format(new Date(value));
+}
+
 export function parseAmount(value: string): number | null {
     const normalized = value.trim().replace(",", ".");
     if (normalized.length === 0) {

@@ -1,5 +1,5 @@
-import { catalog } from "../catalog";
-import { formatAmount } from "../format";
+import { useState } from "react";
+import { formatAmount, formatDay } from "../format";
 import { t } from "../i18n";
 import type { Order } from "../types/order";
 import { Icon, iconPaths } from "./Icon";
@@ -7,29 +7,33 @@ import { Icon, iconPaths } from "./Icon";
 interface ProductGridProps {
     orders: readonly Order[];
     favoriteIds: readonly string[];
-    cartId: string | null;
     onToggleFavorite: (id: string) => void;
-    onAddToCart: (id: string) => void;
     onOpen: (id: string) => void;
+    onReorder: (order: Order) => Promise<void>;
     onCreateOrder?: () => void;
-}
-
-function catalogIdFor(order: Order): string | null {
-    const match = catalog.find((product) => product.image === order.image);
-    return match?.id ?? null;
 }
 
 export function ProductGrid({
     orders,
     favoriteIds,
-    cartId,
     onToggleFavorite,
-    onAddToCart,
     onOpen,
+    onReorder,
     onCreateOrder,
 }: ProductGridProps) {
+    const [reorderingId, setReorderingId] = useState<string | null>(null);
+
     if (orders.length === 0 && !onCreateOrder) {
         return <p className="empty">{t("emptyFavorites")}</p>;
+    }
+
+    async function reorder(order: Order) {
+        setReorderingId(order.id);
+        try {
+            await onReorder(order);
+        } finally {
+            setReorderingId(null);
+        }
     }
 
     return (
@@ -44,49 +48,58 @@ export function ProductGrid({
             ) : null}
             {orders.map((order) => {
                 const favorite = favoriteIds.includes(order.id);
-                const catalogId = catalogIdFor(order);
+                const reordering = reorderingId === order.id;
                 return (
                     <li key={order.id} className="photo-card">
-                        {order.image ? (
-                            <img src={order.image} alt={order.product} />
-                        ) : (
-                            <span className="photo-fallback">{order.product.slice(0, 1)}</span>
-                        )}
-                        <button
-                            type="button"
-                            className="photo-open"
-                            aria-label={order.product}
-                            onClick={() => onOpen(order.id)}
-                        />
-                        <button
-                            type="button"
-                            className={favorite ? "heart-float is-on" : "heart-float"}
-                            aria-label={favorite ? t("favoriteRemove") : t("favoriteAdd")}
-                            aria-pressed={favorite}
-                            onClick={() => onToggleFavorite(order.id)}
-                        >
-                            <Icon paths={iconPaths.heart} filled={favorite} />
-                        </button>
-                        <div className="shade" />
-                        <div className="cap">
-                            <span className="cap-copy">
-                                <strong>{order.product}</strong>
-                                <small>{order.customer}</small>
-                            </span>
+                        <div className="photo-frame">
+                            {order.image ? (
+                                <img src={order.image} alt={order.product} />
+                            ) : (
+                                <span className="photo-fallback">{order.product.slice(0, 1)}</span>
+                            )}
                             <button
                                 type="button"
-                                className={catalogId !== null && catalogId === cartId ? "buy blue" : "buy ghost"}
+                                className="photo-open"
+                                aria-label={order.product}
+                                onClick={() => onOpen(order.id)}
+                            />
+                            <button
+                                type="button"
+                                className={favorite ? "heart-float is-on" : "heart-float"}
+                                aria-label={favorite ? t("favoriteRemove") : t("favoriteAdd")}
+                                aria-pressed={favorite}
+                                onClick={() => onToggleFavorite(order.id)}
+                            >
+                                <Icon paths={iconPaths.heart} filled={favorite} />
+                            </button>
+                            <div className="shade" />
+                            <div className="cap">
+                                <span className="cap-copy">
+                                    <strong>{order.product}</strong>
+                                    <small>
+                                        {t("customer")}: {order.customer}
+                                    </small>
+                                    <small>{order.id}</small>
+                                </span>
+                            </div>
+                        </div>
+                        <div className="reorder-bar">
+                            <button
+                                type="button"
+                                className="reorder-action"
+                                disabled={reordering}
                                 onClick={() => {
-                                    if (catalogId) {
-                                        onAddToCart(catalogId);
-                                        return;
-                                    }
-
-                                    onOpen(order.id);
+                                    void reorder(order);
                                 }}
                             >
-                                {formatAmount(order.amount)}
+                                {t("orderAgain")}
                             </button>
+                            <span className="reorder-price">
+                                <span className="reorder-amount">{formatAmount(order.amount)}</span>
+                                <small className="reorder-created">
+                                    {t("createdOn")}: {formatDay(order.createdAt)}
+                                </small>
+                            </span>
                         </div>
                     </li>
                 );

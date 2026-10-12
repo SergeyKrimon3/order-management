@@ -18,11 +18,13 @@ public sealed class Order
 
     public string? Image { get; private set; }
 
+    public Guid? RepeatOfId { get; private set; }
+
     private Order()
     {
     }
 
-    public static Order Create(string customer, string product, decimal amount, string? image = null)
+    public static Order Create(string customer, string product, decimal amount, string? image = null, Guid? repeatOfId = null)
     {
         if (string.IsNullOrWhiteSpace(customer))
         {
@@ -49,7 +51,8 @@ public sealed class Order
             Status = OrderStatus.Pending,
             CreatedAt = now,
             UpdatedAt = now,
-            Image = NormalizeImage(image)
+            Image = NormalizeImage(image),
+            RepeatOfId = repeatOfId
         };
     }
 

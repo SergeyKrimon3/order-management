@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { listOrders } from "./api/orders";
+import { listOrders, createOrder } from "./api/orders";
 import { findProduct } from "./catalog";
 import { CartPanel } from "./components/CartPanel";
 import { CreateOrderModal } from "./components/CreateOrderModal";
@@ -102,8 +102,9 @@ export default function App() {
 
     const selected = orders.find((order) => order.id === selectedId) ?? null;
     const completedOrders = orders.filter((order) => order.status === "completed");
-    const favoriteOrders = completedOrders.filter((order) => favoriteIds.includes(order.id));
-    const visibleOrders = screen === "favorites" ? favoriteOrders : completedOrders;
+    const catalogOrders = completedOrders.filter((order) => order.repeatOf === null);
+    const favoriteOrders = catalogOrders.filter((order) => favoriteIds.includes(order.id));
+    const visibleOrders = screen === "favorites" ? favoriteOrders : catalogOrders;
 
     function openOrder(id: string) {
         setSelectedId(id);
@@ -127,13 +128,20 @@ export default function App() {
                     <ProductGrid
                         orders={visibleOrders}
                         favoriteIds={favoriteIds}
-                        cartId={cartId}
                         onToggleFavorite={toggleFavorite}
-                        onAddToCart={(id) => {
-                            setCartId(id);
-                            setScreen("catalog");
-                        }}
                         onOpen={openOrder}
+                        onReorder={async (order) => {
+                            const created = await createOrder({
+                                customer: order.customer,
+                                product: order.product,
+                                amount: order.amount,
+                                image: order.image,
+                                repeatOf: order.id,
+                            });
+                            setSelectedId(created.id);
+                            setScreen("orders");
+                            void refresh();
+                        }}
                         onCreateOrder={screen === "catalog" ? () => setCreateOpen(true) : undefined}
                     />
                 )}

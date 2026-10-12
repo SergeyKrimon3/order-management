@@ -54,6 +54,10 @@ namespace OrderManagement.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("product");
 
+                    b.Property<Guid?>("RepeatOfId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("repeat_of_id");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
