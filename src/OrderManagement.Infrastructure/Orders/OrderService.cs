@@ -5,7 +5,7 @@ using OrderManagement.Infrastructure.Persistence;
 
 namespace OrderManagement.Infrastructure.Orders;
 
-public sealed class OrderService(OrdersDbContext database, IOrderCreatedPublisher publisher)
+public sealed class OrderService(OrdersDbContext database)
 {
     public async Task<Order> CreateAsync(
         string customer,
@@ -22,8 +22,8 @@ public sealed class OrderService(OrdersDbContext database, IOrderCreatedPublishe
 
         var order = Order.Create(customer, product, amount, image, repeatOfId);
         database.Orders.Add(order);
+        database.OutboxMessages.Add(OutboxMessage.For(OrderCreatedMessage.Create(order.Id)));
         await database.SaveChangesAsync(cancellationToken);
-        await publisher.PublishAsync(OrderCreatedMessage.Create(order.Id), cancellationToken);
         return order;
     }
 

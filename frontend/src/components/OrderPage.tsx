@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { getOrder, OrderRequestError } from "../api/orders";
-import { formatAmount, formatDate, statusLabel, stepCaption } from "../format";
+import { formatAmount, formatDayAndTime, statusLabel, stepCaption } from "../format";
 import { t, type MessageKey } from "../i18n";
 import type { Order } from "../types/order";
 import { ThemeToggle } from "./ThemeToggle";
@@ -106,11 +106,11 @@ export function OrderPage({ id }: OrderPageProps) {
                                 </div>
                                 <div>
                                     <dt>{t("createdAt")}</dt>
-                                    <dd>{formatDate(order.createdAt)}</dd>
+                                    <dd>{formatDayAndTime(order.createdAt)}</dd>
                                 </div>
                                 <div>
                                     <dt>{t("updatedAt")}</dt>
-                                    <dd>{formatDate(order.updatedAt)}</dd>
+                                    <dd>{formatDayAndTime(order.updatedAt)}</dd>
                                 </div>
                             </dl>
                         </>

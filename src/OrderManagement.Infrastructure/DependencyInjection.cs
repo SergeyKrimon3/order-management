@@ -38,6 +38,7 @@ public static class DependencyInjection
         });
         services.AddSingleton<IOrderCreatedPublisher, RabbitMqOrderCreatedPublisher>();
         services.AddSingleton<IOrderStatusChangedPublisher, RabbitMqOrderStatusChangedPublisher>();
+        services.AddHostedService<OutboxRelay>();
         services.AddScoped<OrderService>();
         services.AddScoped<FavoriteService>();
         services.AddScoped<OrderCreatedProcessor>();

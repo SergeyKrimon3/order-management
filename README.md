@@ -159,13 +159,22 @@ Se a resposta não estiver nesses dados, o modelo diz que não sabe. Ele não in
 
 O endpoint é `POST /orders/ask`. O corpo leva `question` (de 1 a 1000 caracteres), `locale` e `history`. O frontend chama isso em `/api/orders/ask`. O nginx espera até 90 segundos por essa resposta.
 
+## Mensageria transacional
+
+Criar um pedido, ou mudar o status dele, grava a linha de negócio e a mensagem na mesma transação do PostgreSQL. A mensagem fica em `outbox_messages`, com `published_at` vazio. O RabbitMQ não entra nessa transação.
+
+Um relay na API e outro no worker leem as mensagens ainda não publicadas com `FOR UPDATE SKIP LOCKED`, publicam na fila e só então preenchem `published_at`. Se o RabbitMQ estiver fora, o pedido continua salvo e a mensagem espera. As duas instâncias do relay não publicam a mesma linha ao mesmo tempo. Se o processo cair depois de publicar e antes de marcar, a mensagem sai de novo: o worker ignora um pedido que já está finalizado.
+
+`OrderCreated` vai para a fila `order-created`. `OrderStatusChanged` vai para `order-status-changed`.
+
 ## Decisões técnicas
 
 | Escolha | Motivo |
 | --- | --- |
 | .NET 10 | API e worker na linha atual do SDK, publicados nas imagens Docker. |
 | EF Core + Npgsql | Migrations versionadas no código e acesso tipado ao PostgreSQL. A API aplica as migrations ao iniciar. |
-| RabbitMQ | Fila durável para a mensagem `OrderCreated`, com `CorrelationId` e `EventType`. Entra no mesmo Compose na próxima etapa. |
+| RabbitMQ | Fila durável para `OrderCreated` e `OrderStatusChanged`, com `CorrelationId` e `EventType`. |
+| Outbox | A mensagem nasce na mesma transação do pedido. O relay publica no RabbitMQ depois. |
 | React + Vite | A tela é um CRUD. Não há renderização no servidor. |
 | Docker Compose | Sobe API, worker, frontend, PostgreSQL e pgAdmin com um comando. Segredos ficam em variáveis de ambiente. |
 | pgAdmin | Administração do banco dentro do Compose. O DBeaver continua disponível na máquina local. |

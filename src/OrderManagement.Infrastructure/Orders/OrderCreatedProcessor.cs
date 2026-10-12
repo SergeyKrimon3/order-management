@@ -5,7 +5,7 @@ using OrderManagement.Infrastructure.Persistence;
 
 namespace OrderManagement.Infrastructure.Orders;
 
-public sealed class OrderCreatedProcessor(OrdersDbContext database, IOrderStatusChangedPublisher statusChanges)
+public sealed class OrderCreatedProcessor(OrdersDbContext database)
 {
     public async Task ProcessAsync(Guid orderId, CancellationToken cancellationToken)
     {
@@ -27,8 +27,8 @@ public sealed class OrderCreatedProcessor(OrdersDbContext database, IOrderStatus
             if (order.Status == OrderStatus.Pending)
             {
                 order.MarkAsProcessing();
+                database.OutboxMessages.Add(OutboxMessage.For(OrderStatusChangedMessage.Create(order.Id, order.Status)));
                 await database.SaveChangesAsync(cancellationToken);
-                await statusChanges.PublishAsync(OrderStatusChangedMessage.Create(order.Id, order.Status), cancellationToken);
             }
         }
 
@@ -50,7 +50,7 @@ public sealed class OrderCreatedProcessor(OrdersDbContext database, IOrderStatus
         }
 
         order.MarkAsCompleted();
+        database.OutboxMessages.Add(OutboxMessage.For(OrderStatusChangedMessage.Create(order.Id, order.Status)));
         await database.SaveChangesAsync(cancellationToken);
-        await statusChanges.PublishAsync(OrderStatusChangedMessage.Create(order.Id, order.Status), cancellationToken);
     }
 }

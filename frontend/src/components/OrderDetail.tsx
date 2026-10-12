@@ -1,4 +1,4 @@
-import { formatAmount, formatDate, statusLabel } from "../format";
+import { formatAmount, formatDayAndTime, statusLabel } from "../format";
 import { t } from "../i18n";
 import type { Order, OrderStatus } from "../types/order";
 
@@ -42,7 +42,7 @@ export function OrderDetail({ order, onClose }: OrderDetailProps) {
                 </div>
                 <div>
                     <dt>{t("createdAt")}</dt>
-                    <dd>{formatDate(order.createdAt)}</dd>
+                    <dd>{formatDayAndTime(order.createdAt)}</dd>
                 </div>
             </dl>
             <ol className="steps">

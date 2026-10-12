@@ -28,14 +28,6 @@ export function formatAmount(amount: number): string {
     }).format(amount);
 }
 
-export function formatDate(value: string): string {
-    return new Intl.DateTimeFormat(navigator.language, {
-        dateStyle: "short",
-        timeStyle: "short",
-        timeZone: "America/Sao_Paulo",
-    }).format(new Date(value));
-}
-
 export function formatDay(value: string): string {
     return new Intl.DateTimeFormat("pt-BR", {
         day: "2-digit",
