@@ -1,4 +1,4 @@
-# order-management
+# Gestão de pedidos
 
 Sistema de gestão de pedidos com API .NET, worker, PostgreSQL e interface React.
 
