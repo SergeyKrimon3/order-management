@@ -81,6 +81,9 @@
     "askHint": "Ask the AI",
     "askPlaceholder": "Ask a question about the orders",
     "askSubmit": "Ask",
-    "asking": "Thinking...",
+    "askSend": "Send",
+    "askYou": "You",
+    "askAi": "AI",
+    "asking": "Thinking",
     "askError": "Could not answer right now."
 }

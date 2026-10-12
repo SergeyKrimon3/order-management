@@ -1,5 +1,6 @@
-import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { askOrders } from "../api/insights";
+import { formatTime } from "../format";
 import { t } from "../i18n";
 import { Icon, iconPaths } from "./Icon";
 
@@ -9,25 +10,68 @@ interface AskModalProps {
     onClose: () => void;
 }
 
+interface ChatMessage {
+    id: number;
+    role: "user" | "assistant";
+    text: string;
+    at: string;
+}
+
 export function AskModal({ onClose }: AskModalProps) {
     const titleId = useId();
     const fieldRef = useRef<HTMLTextAreaElement>(null);
+    const logRef = useRef<HTMLDivElement>(null);
     const requestRef = useRef<AbortController | null>(null);
+    const nextId = useRef(1);
     const [question, setQuestion] = useState("");
-    const [answer, setAnswer] = useState("");
-    const [error, setError] = useState("");
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [asking, setAsking] = useState(false);
 
     useEffect(() => {
-        fieldRef.current?.focus();
         return () => {
             requestRef.current?.abort();
         };
     }, []);
 
+    useEffect(() => {
+        if (!asking) {
+            fieldRef.current?.focus();
+        }
+    }, [asking]);
+
+    useEffect(() => {
+        const field = fieldRef.current;
+        if (!field) {
+            return;
+        }
+
+        field.style.height = "0px";
+        field.style.height = `${Math.min(field.scrollHeight, 100)}px`;
+    }, [question]);
+
+    useEffect(() => {
+        const log = logRef.current;
+        if (!log) {
+            return;
+        }
+
+        log.scrollTop = log.scrollHeight;
+    }, [messages, asking]);
+
     function close() {
         requestRef.current?.abort();
         onClose();
+    }
+
+    function appendMessage(role: ChatMessage["role"], text: string) {
+        const message: ChatMessage = {
+            id: nextId.current,
+            role,
+            text,
+            at: new Date().toISOString(),
+        };
+        nextId.current += 1;
+        setMessages((current) => [...current, message]);
     }
 
     async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -42,19 +86,19 @@ export function AskModal({ onClose }: AskModalProps) {
             return;
         }
 
+        appendMessage("user", trimmed);
+        setQuestion("");
         const controller = new AbortController();
         requestRef.current = controller;
         setAsking(true);
-        setError("");
-        setAnswer("");
         try {
-            setAnswer(await askOrders(trimmed, controller.signal));
+            appendMessage("assistant", await askOrders(trimmed, controller.signal));
         } catch (caught) {
             if (caught instanceof DOMException && caught.name === "AbortError") {
                 return;
             }
 
-            setError(t("askError"));
+            appendMessage("assistant", t("askError"));
         } finally {
             if (requestRef.current === controller) {
                 requestRef.current = null;
@@ -63,7 +107,15 @@ export function AskModal({ onClose }: AskModalProps) {
         }
     }
 
+    function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+        if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            event.currentTarget.form?.requestSubmit();
+        }
+    }
+
     const missing = question.trim().length === 0;
+    const showRequired = missing && !asking;
 
     return (
         <div className="modal-backdrop">
@@ -81,44 +133,87 @@ export function AskModal({ onClose }: AskModalProps) {
                         <Icon paths={iconPaths.closeCircle} />
                     </button>
                 </div>
-                <label className={missing ? "is-invalid" : undefined}>
-                    <span>{t("askLabel")}</span>
-                    <textarea
-                        ref={fieldRef}
-                        value={question}
-                        maxLength={questionLimit}
-                        rows={5}
-                        placeholder={t("askPlaceholder")}
-                        aria-invalid={missing}
-                        disabled={asking}
-                        onChange={(event) => setQuestion(event.target.value)}
-                    />
+                <div className="ask-log" ref={logRef}>
+                    {messages.map((message) => (
+                        <ChatBubble key={message.id} message={message} />
+                    ))}
+                    {asking ? <ThinkingBubble /> : null}
+                </div>
+                <div className="ask-composer">
+                    <div className={showRequired ? "ask-pill is-invalid" : "ask-pill"}>
+                        <textarea
+                            ref={fieldRef}
+                            value={question}
+                            maxLength={questionLimit}
+                            rows={1}
+                            placeholder={t("askPlaceholder")}
+                            aria-label={t("askLabel")}
+                            aria-invalid={showRequired}
+                            disabled={asking}
+                            onChange={(event) => setQuestion(event.target.value)}
+                            onKeyDown={onKeyDown}
+                        />
+                        <button type="submit" className="ask-send" disabled={asking || missing} aria-label={t("askSend")}>
+                            <Icon paths={iconPaths.send} />
+                        </button>
+                    </div>
                     <span className="ask-foot">
-                        {missing ? (
+                        {showRequired ? (
                             <span className="field-required">{t("requiredField")}</span>
-                        ) : (
+                        ) : !missing ? (
                             <span className="ask-count">{question.length} / {questionLimit}</span>
-                        )}
+                        ) : null}
                     </span>
-                </label>
-                {asking ? (
-                    <p className="ask-thinking" role="status">
-                        {t("asking")}
-                        <span className="ask-thinking-dots" aria-hidden="true">
-                            <span />
-                            <span />
-                            <span />
-                        </span>
-                    </p>
-                ) : null}
-                {error ? <p className="field-error">{error}</p> : null}
-                {answer ? <p className="ask-answer">{answer}</p> : null}
-                <div className="modal-submit">
-                    <button type="submit" className="reorder-action" disabled={asking || missing}>
-                        {t("askSubmit")}
-                    </button>
                 </div>
             </form>
         </div>
+    );
+}
+
+function ChatBubble({ message }: { message: ChatMessage }) {
+    const own = message.role === "user";
+
+    return (
+        <article className={own ? "ask-message is-own" : "ask-message"}>
+            <div className="ask-sender">{own ? t("askYou") : t("askAi")}</div>
+            <div className="ask-row">
+                <span className="ask-avatar" aria-hidden="true">
+                    <Icon paths={own ? iconPaths.user : iconPaths.robot} />
+                </span>
+                <div className="ask-bubble-line">
+                    <span className="ask-tail" aria-hidden="true" />
+                    <div className="ask-bubble">
+                        <p>{message.text}</p>
+                        <time dateTime={message.at}>{formatTime(message.at)}</time>
+                    </div>
+                </div>
+            </div>
+        </article>
+    );
+}
+
+function ThinkingBubble() {
+    return (
+        <article className="ask-message" aria-busy="true">
+            <div className="ask-sender">{t("askAi")}</div>
+            <div className="ask-row">
+                <span className="ask-avatar" aria-hidden="true">
+                    <Icon paths={iconPaths.robot} />
+                </span>
+                <div className="ask-bubble-line">
+                    <span className="ask-tail" aria-hidden="true" />
+                    <div className="ask-bubble is-thinking">
+                        <p className="ask-thinking" role="status">
+                            {t("asking")}
+                            <span className="ask-thinking-dots" aria-hidden="true">
+                                <span />
+                                <span />
+                                <span />
+                            </span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </article>
     );
 }

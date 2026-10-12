@@ -81,6 +81,9 @@
     "askHint": "Pergunte a IA",
     "askPlaceholder": "Faça uma pergunta sobre os pedidos",
     "askSubmit": "Perguntar",
-    "asking": "Pensando...",
+    "askSend": "Enviar",
+    "askYou": "Você",
+    "askAi": "IA",
+    "asking": "Pensando",
     "askError": "Não foi possível responder agora."
 }

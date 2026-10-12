@@ -44,7 +44,7 @@ export function OrderRail({ orders, onSelect }: OrderRailProps) {
                                     {formatDayAndTime(order.createdAt)}
                                 </small>
                             </span>
-                            <span className="order-lead">
+                            <span className="order-lead is-rail">
                                 <span className={`pill ${order.status}`}>{statusLabel(order.status)}</span>
                                 <WorkerDots status={order.status} />
                             </span>

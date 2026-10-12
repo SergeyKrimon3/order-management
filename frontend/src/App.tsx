@@ -232,8 +232,10 @@ function StoreApp() {
                     <ThemeToggle />
                 </div>
                 <h2>{t("ordersNow")}</h2>
-                {loadError ? <p className="field-error">{loadError}</p> : null}
-                <OrderRail orders={orders} onSelect={openOrder} />
+                <div className="rail-scroll">
+                    {loadError ? <p className="field-error">{loadError}</p> : null}
+                    <OrderRail orders={orders} onSelect={openOrder} />
+                </div>
             </aside>
             {createOpen ? (
                 <CreateOrderModal
