@@ -1,7 +1,9 @@
-import { useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent } from "react";
-import { formatAmount, formatDate, statusLabel } from "../format";
+import { useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { formatAmount, formatDate, statusLabel, stepCaption } from "../format";
 import { t } from "../i18n";
 import type { Order, OrderStatus } from "../types/order";
+import { FilterCalendar } from "./FilterCalendar";
+import { FilterSelect } from "./FilterSelect";
 import { Icon, iconPaths } from "./Icon";
 import { WorkerDots } from "./WorkerDots";
 
@@ -61,10 +63,6 @@ function onAmountKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
     }
 }
 
-function isOrderStatus(value: string): value is OrderStatus {
-    return value === "pending" || value === "processing" || value === "completed";
-}
-
 function compareOrders(left: Order, right: Order, key: SortKey): number {
     switch (key) {
         case "customer":
@@ -102,30 +100,18 @@ function saoPauloDay(value: string): string {
     }).format(new Date(value));
 }
 
-function matchesDay(createdAt: string, day: string): boolean {
-    if (day.length === 0) {
+function matchesRange(createdAt: string, value: string): boolean {
+    if (value.length === 0) {
         return true;
     }
 
-    return saoPauloDay(createdAt) === day;
-}
-
-function openCalendar(event: ReactMouseEvent<HTMLInputElement>) {
-    const input = event.currentTarget;
-    const rect = input.getBoundingClientRect();
-    if (event.clientX > rect.right - 32) {
-        return;
+    const [start = "", end = ""] = value.split("|");
+    if (start.length === 0 || end.length === 0) {
+        return true;
     }
 
-    if (typeof input.showPicker !== "function") {
-        return;
-    }
-
-    try {
-        input.showPicker();
-    } catch {
-        return;
-    }
+    const day = saoPauloDay(createdAt);
+    return day >= start && day <= end;
 }
 
 function matchesAmount(amount: number, digits: string): boolean {
@@ -153,7 +139,7 @@ function matchesFilters(order: Order, filters: Record<SortKey, string>): boolean
         return false;
     }
 
-    return matchesDay(order.createdAt, filters.createdAt);
+    return matchesRange(order.createdAt, filters.createdAt);
 }
 
 function ClearFilter({ onClear }: { onClear: () => void }) {
@@ -248,27 +234,13 @@ export function OrderList({ orders, selectedId, onSelect }: OrderListProps) {
                                 <th key={column.key}>
                                     <span className="filter-caption">{t(column.label)}</span>
                                     {column.key === "status" ? (
-                                        <div className="filter-field">
-                                            <select
-                                                className="order-search order-status"
-                                                value={filters.status}
-                                                aria-label={`${t("searchOrders")} ${t("status")}`}
-                                                onChange={(event) => {
-                                                    const value = event.target.value;
-                                                    setFilter("status", isOrderStatus(value) ? value : "");
-                                                }}
-                                            >
-                                                <option value="">{t("selectOption")}</option>
-                                                {statuses.map((status) => (
-                                                    <option key={status} value={status}>{statusLabel(status)}</option>
-                                                ))}
-                                            </select>
-                                            {filters.status.length > 0 ? (
-                                                <ClearFilter onClear={() => setFilter("status", "")} />
-                                            ) : (
-                                                <span className="filter-chevron" aria-hidden="true" />
-                                            )}
-                                        </div>
+                                        <FilterSelect
+                                            value={filters.status}
+                                            ariaLabel={`${t("searchOrders")} ${t("status")}`}
+                                            options={statuses.map((status) => ({ value: status, label: statusLabel(status) }))}
+                                            onChange={(value) => setFilter("status", value)}
+                                            onClear={() => setFilter("status", "")}
+                                        />
                                     ) : column.key === "amount" ? (
                                         <div className="filter-field">
                                             <span className="filter-prefix" aria-hidden="true">R$</span>
@@ -285,17 +257,13 @@ export function OrderList({ orders, selectedId, onSelect }: OrderListProps) {
                                             {filters.amount.length > 0 ? <ClearFilter onClear={() => setFilter("amount", "")} /> : null}
                                         </div>
                                     ) : column.key === "createdAt" ? (
-                                        <div className="filter-field">
-                                            <input
-                                                className={filters.createdAt.length > 0 ? "order-search order-date has-clear" : "order-search order-date"}
-                                                type="date"
-                                                value={filters.createdAt}
-                                                aria-label={`${t("searchOrders")} ${t("createdAt")}`}
-                                                onClick={openCalendar}
-                                                onChange={(event) => setFilter("createdAt", event.target.value)}
-                                            />
-                                            {filters.createdAt.length > 0 ? <ClearFilter onClear={() => setFilter("createdAt", "")} /> : null}
-                                        </div>
+                                        <FilterCalendar
+                                            start={filters.createdAt.split("|")[0] ?? ""}
+                                            end={filters.createdAt.split("|")[1] ?? ""}
+                                            ariaLabel={`${t("searchOrders")} ${t("createdAt")}`}
+                                            onChange={(start, end) => setFilter("createdAt", `${start}|${end}`)}
+                                            onClear={() => setFilter("createdAt", "")}
+                                        />
                                     ) : (
                                         <div className="filter-field">
                                             <input
@@ -324,8 +292,9 @@ export function OrderList({ orders, selectedId, onSelect }: OrderListProps) {
                                 <td>{order.product}</td>
                                 <td>{formatAmount(order.amount)}</td>
                                 <td>
-                                    <span className="order-lead">
+                                    <span className="order-lead is-stacked">
                                         <span className={`pill ${order.status}`}>{statusLabel(order.status)}</span>
+                                        <span className="step-caption">{stepCaption(order.status)}</span>
                                         <WorkerDots status={order.status} />
                                     </span>
                                 </td>
@@ -347,8 +316,9 @@ export function OrderList({ orders, selectedId, onSelect }: OrderListProps) {
                             <strong>{order.customer}</strong>
                             <span>{order.product}</span>
                             <span>{formatAmount(order.amount)}</span>
-                            <span className="order-lead">
+                            <span className="order-lead is-stacked">
                                 <span className={`pill ${order.status}`}>{statusLabel(order.status)}</span>
+                                <span className="step-caption">{stepCaption(order.status)}</span>
                                 <WorkerDots status={order.status} />
                             </span>
                         </button>

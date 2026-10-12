@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { addFavorite, isOrderId, listFavorites, removeFavorite } from "./api/favorites";
-import { listOrders, createOrder } from "./api/orders";
+import { listOrders } from "./api/orders";
 import { CreateOrderModal } from "./components/CreateOrderModal";
 import { OrderDetail } from "./components/OrderDetail";
 import { OrderList } from "./components/OrderList";
@@ -45,6 +45,8 @@ export default function App() {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [loadError, setLoadError] = useState("");
     const [createOpen, setCreateOpen] = useState(false);
+    const [repeatOrder, setRepeatOrder] = useState<Order | null>(null);
+    const [trackedId, setTrackedId] = useState<string | null>(null);
     const refreshGeneration = useRef(0);
 
     const refresh = useCallback(async () => {
@@ -159,20 +161,18 @@ export default function App() {
                         favoriteIds={favoriteIds}
                         onToggleFavorite={toggleFavorite}
                         onOpen={openOrder}
-                        onReorder={async (order) => {
-                            const created = await createOrder({
-                                customer: order.customer,
-                                product: order.product,
-                                amount: order.amount,
-                                image: order.image,
-                                repeatOf: order.id,
-                            });
-                            setOrders((current) => [created, ...current.filter((item) => item.id !== created.id)]);
-                            setSelectedId(created.id);
-                            setScreen("orders");
-                            void refresh();
+                        onReorder={(order) => {
+                            if (createOpen) {
+                                return;
+                            }
+
+                            setRepeatOrder(order);
+                            setCreateOpen(true);
                         }}
-                        onCreateOrder={screen === "catalog" ? () => setCreateOpen(true) : undefined}
+                        onCreateOrder={screen === "catalog" ? () => {
+                            setRepeatOrder(null);
+                            setCreateOpen(true);
+                        } : undefined}
                     />
                 )}
             </div>
@@ -202,12 +202,16 @@ export default function App() {
             </aside>
             {createOpen ? (
                 <CreateOrderModal
-                    onClose={() => setCreateOpen(false)}
-                    onCreated={(order) => {
+                    liveOrder={orders.find((order) => order.id === trackedId) ?? null}
+                    repeatOrder={repeatOrder}
+                    onClose={() => {
                         setCreateOpen(false);
+                        setRepeatOrder(null);
+                        setTrackedId(null);
+                    }}
+                    onCreated={(order) => {
+                        setTrackedId(order.id);
                         setOrders((current) => [order, ...current.filter((item) => item.id !== order.id)]);
-                        setSelectedId(order.id);
-                        setScreen("orders");
                         void refresh();
                     }}
                 />

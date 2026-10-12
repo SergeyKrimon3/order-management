@@ -10,7 +10,7 @@ interface ProductGridProps {
     favoriteIds: readonly string[];
     onToggleFavorite: (id: string) => void;
     onOpen: (id: string) => void;
-    onReorder: (order: Order) => Promise<void>;
+    onReorder: (order: Order) => void;
     onCreateOrder?: () => void;
 }
 
@@ -22,20 +22,10 @@ export function ProductGrid({
     onReorder,
     onCreateOrder,
 }: ProductGridProps) {
-    const [reorderingId, setReorderingId] = useState<string | null>(null);
     const [pulsingId, setPulsingId] = useState<string | null>(null);
 
     if (orders.length === 0 && !onCreateOrder) {
         return <EmptyFavorites />;
-    }
-
-    async function reorder(order: Order) {
-        setReorderingId(order.id);
-        try {
-            await onReorder(order);
-        } finally {
-            setReorderingId(null);
-        }
     }
 
     return (
@@ -50,7 +40,6 @@ export function ProductGrid({
             ) : null}
             {orders.map((order) => {
                 const favorite = favoriteIds.includes(order.id);
-                const reordering = reorderingId === order.id;
                 const heartClass = favorite
                     ? pulsingId === order.id
                         ? "heart-float is-on is-pulse"
@@ -104,10 +93,7 @@ export function ProductGrid({
                             <button
                                 type="button"
                                 className="reorder-action"
-                                disabled={reordering}
-                                onClick={() => {
-                                    void reorder(order);
-                                }}
+                                onClick={() => onReorder(order)}
                             >
                                 {t("orderAgain")}
                             </button>

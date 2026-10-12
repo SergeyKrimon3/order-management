@@ -7,8 +7,18 @@ const statusKey: Record<OrderStatus, MessageKey> = {
     completed: "completed",
 };
 
+const stepCaptionKey: Record<OrderStatus, MessageKey> = {
+    pending: "stepPending",
+    processing: "stepProcessing",
+    completed: "stepFinished",
+};
+
 export function statusLabel(status: OrderStatus): string {
     return t(statusKey[status]);
+}
+
+export function stepCaption(status: OrderStatus): string {
+    return t(stepCaptionKey[status]);
 }
 
 export function formatAmount(amount: number): string {

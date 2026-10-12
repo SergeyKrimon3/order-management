@@ -49,7 +49,7 @@ export function OrderDetail({ order, onClose }: OrderDetailProps) {
                 {steps.map((step, index) => {
                     const state = index < current ? "done" : index === current ? "current" : "waiting";
                     return (
-                        <li key={step} className={state}>
+                        <li key={step} className={`${step} ${state}`}>
                             <span className={`pill ${step}`}>{statusLabel(step)}</span>
                             <span>{t(stepText[step])}</span>
                         </li>
