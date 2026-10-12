@@ -51,6 +51,29 @@ export async function listOrders(): Promise<Order[]> {
     return body;
 }
 
+export class OrderRequestError extends Error {
+    readonly status: number;
+
+    constructor(status: number, message: string) {
+        super(message);
+        this.status = status;
+    }
+}
+
+export async function getOrder(id: string): Promise<Order> {
+    const response = await fetch(`/api/orders/${encodeURIComponent(id)}`);
+    if (!response.ok) {
+        throw new OrderRequestError(response.status, await readError(response));
+    }
+
+    const body: unknown = await response.json();
+    if (!isOrder(body)) {
+        throw new OrderRequestError(response.status, "Invalid order.");
+    }
+
+    return body;
+}
+
 export async function createOrder(input: CreateOrderInput): Promise<Order> {
     const response = await fetch("/api/orders", {
         method: "POST",

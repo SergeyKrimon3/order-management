@@ -1,12 +1,11 @@
 import { findProductByLabel, type CatalogProduct } from "../catalog";
-import { formatAmount, statusLabel } from "../format";
+import { formatAmount, formatDay, formatTime, statusLabel } from "../format";
 import { t } from "../i18n";
 import type { Order } from "../types/order";
 import { WorkerDots } from "./WorkerDots";
 
 interface OrderRailProps {
     orders: readonly Order[];
-    selectedId: string | null;
     onSelect: (id: string) => void;
 }
 
@@ -14,7 +13,7 @@ function thumbFor(order: Order): CatalogProduct | null {
     return findProductByLabel(order.product, (product) => t(product.nameKey));
 }
 
-export function OrderRail({ orders, selectedId, onSelect }: OrderRailProps) {
+export function OrderRail({ orders, onSelect }: OrderRailProps) {
     if (orders.length === 0) {
         return <p className="empty">{t("empty")}</p>;
     }
@@ -28,7 +27,7 @@ export function OrderRail({ orders, selectedId, onSelect }: OrderRailProps) {
                     <li key={order.id}>
                         <button
                             type="button"
-                            className={order.id === selectedId ? "order-row selected" : "order-row"}
+                            className="order-row"
                             onClick={() => onSelect(order.id)}
                         >
                             {image ? (
@@ -40,6 +39,9 @@ export function OrderRail({ orders, selectedId, onSelect }: OrderRailProps) {
                                 {order.customer}
                                 <small>
                                     {order.product} · {formatAmount(order.amount)}
+                                </small>
+                                <small>
+                                    {formatDay(order.createdAt)} {formatTime(order.createdAt)}
                                 </small>
                             </span>
                             <span className="order-lead">

@@ -9,7 +9,6 @@ import { WorkerDots } from "./WorkerDots";
 
 interface OrderListProps {
     orders: Order[];
-    selectedId: string | null;
     onSelect: (id: string) => void;
 }
 
@@ -142,6 +141,22 @@ function matchesFilters(order: Order, filters: Record<SortKey, string>): boolean
     return matchesRange(order.createdAt, filters.createdAt);
 }
 
+function ViewOrder({ id }: { id: string }) {
+    return (
+        <a
+            className="view-order"
+            href={`/orders/${id}`}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={t("viewOrder")}
+            onClick={(event) => event.stopPropagation()}
+        >
+            <Icon paths={iconPaths.eye} />
+            <span className="view-order-tip" aria-hidden="true">{t("viewOrder")}</span>
+        </a>
+    );
+}
+
 function ClearFilter({ onClear }: { onClear: () => void }) {
     return (
         <button type="button" className="filter-clear" aria-label={t("clearFilter")} onClick={onClear}>
@@ -163,7 +178,7 @@ function SortArrow({ active, direction }: { active: boolean; direction: SortDire
     );
 }
 
-export function OrderList({ orders, selectedId, onSelect }: OrderListProps) {
+export function OrderList({ orders, onSelect }: OrderListProps) {
     const [sort, setSort] = useState<SortState | null>(null);
     const [filters, setFilters] = useState<Record<SortKey, string>>({
         customer: "",
@@ -228,6 +243,7 @@ export function OrderList({ orders, selectedId, onSelect }: OrderListProps) {
                                     </th>
                                 );
                             })}
+                            <th className="actions-col">{t("actions")}</th>
                         </tr>
                         <tr className="order-filter-row">
                             {columns.map((column) => (
@@ -279,15 +295,12 @@ export function OrderList({ orders, selectedId, onSelect }: OrderListProps) {
                                     )}
                                 </th>
                             ))}
+                            <th className="actions-filter" />
                         </tr>
                     </thead>
                     <tbody>
                         {visible.map((order) => (
-                            <tr
-                                key={order.id}
-                                className={order.id === selectedId ? "selected" : undefined}
-                                onClick={() => onSelect(order.id)}
-                            >
+                            <tr key={order.id} onClick={() => onSelect(order.id)}>
                                 <td>{order.customer}</td>
                                 <td>{order.product}</td>
                                 <td>{formatAmount(order.amount)}</td>
@@ -299,6 +312,9 @@ export function OrderList({ orders, selectedId, onSelect }: OrderListProps) {
                                     </span>
                                 </td>
                                 <td>{formatDate(order.createdAt)}</td>
+                                <td className="actions-col">
+                                    <ViewOrder id={order.id} />
+                                </td>
                             </tr>
                         ))}
                     </tbody>
@@ -307,10 +323,10 @@ export function OrderList({ orders, selectedId, onSelect }: OrderListProps) {
             {visible.length === 0 ? <p className="empty order-no-results">{t("noResults")}</p> : null}
             <ul className="cards">
                 {visible.map((order) => (
-                    <li key={order.id}>
+                    <li key={order.id} className="card-line">
                         <button
                             type="button"
-                            className={order.id === selectedId ? "card selected" : "card"}
+                            className="card"
                             onClick={() => onSelect(order.id)}
                         >
                             <strong>{order.customer}</strong>
@@ -322,6 +338,7 @@ export function OrderList({ orders, selectedId, onSelect }: OrderListProps) {
                                 <WorkerDots status={order.status} />
                             </span>
                         </button>
+                        <ViewOrder id={order.id} />
                     </li>
                 ))}
             </ul>

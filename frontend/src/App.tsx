@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { addFavorite, isOrderId, listFavorites, removeFavorite } from "./api/favorites";
 import { listOrders } from "./api/orders";
 import { CreateOrderModal } from "./components/CreateOrderModal";
-import { OrderDetail } from "./components/OrderDetail";
+import { OrderPage } from "./components/OrderPage";
 import { OrderList } from "./components/OrderList";
 import { OrderRail } from "./components/OrderRail";
 import { ProductGrid } from "./components/ProductGrid";
@@ -13,6 +13,11 @@ import { t, type MessageKey } from "./i18n";
 import type { Order } from "./types/order";
 
 const favoritesKey = "favorites";
+const orderPath = /^\/orders\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/?$/i;
+
+function orderPageId(): string | null {
+    return orderPath.exec(window.location.pathname)?.[1] ?? null;
+}
 
 const screenTitle: Record<Screen, MessageKey> = {
     catalog: "catalog",
@@ -39,10 +44,18 @@ function readFavorites(): string[] {
 }
 
 export default function App() {
-    const [screen, setScreen] = useState<Screen>("catalog");
+    const pageId = orderPageId();
+    if (pageId !== null) {
+        return <OrderPage id={pageId} />;
+    }
+
+    return <StoreApp />;
+}
+
+function StoreApp() {
+    const [screen, setScreen] = useState<Screen>(window.location.hash === "#orders" ? "orders" : "catalog");
     const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
-    const [selectedId, setSelectedId] = useState<string | null>(null);
     const [loadError, setLoadError] = useState("");
     const [createOpen, setCreateOpen] = useState(false);
     const [repeatOrder, setRepeatOrder] = useState<Order | null>(null);
@@ -131,15 +144,13 @@ export default function App() {
         });
     }
 
-    const selected = orders.find((order) => order.id === selectedId) ?? null;
     const completedOrders = orders.filter((order) => order.status === "completed");
     const catalogOrders = completedOrders.filter((order) => order.repeatOf === null);
     const favoriteOrders = catalogOrders.filter((order) => favoriteIds.includes(order.id));
     const visibleOrders = screen === "favorites" ? favoriteOrders : catalogOrders;
 
     function openOrder(id: string) {
-        setSelectedId(id);
-        setScreen("orders");
+        window.location.assign(`/orders/${id}`);
     }
 
     return (
@@ -150,10 +161,7 @@ export default function App() {
                     <section className="orders-board">
                         <h1>{t("orders")}</h1>
                         {loadError ? <p className="field-error">{loadError}</p> : null}
-                        <OrderList orders={orders} selectedId={selectedId} onSelect={setSelectedId} />
-                        {selected ? (
-                            <OrderDetail order={selected} onClose={() => setSelectedId(null)} />
-                        ) : null}
+                        <OrderList orders={orders} onSelect={openOrder} />
                     </section>
                 ) : (
                     <ProductGrid
@@ -191,14 +199,7 @@ export default function App() {
                 </div>
                 <h2>{t("ordersNow")}</h2>
                 {loadError ? <p className="field-error">{loadError}</p> : null}
-                <OrderRail
-                    orders={orders}
-                    selectedId={selectedId}
-                    onSelect={(id) => {
-                        setSelectedId(id);
-                        setScreen("orders");
-                    }}
-                />
+                <OrderRail orders={orders} onSelect={openOrder} />
             </aside>
             {createOpen ? (
                 <CreateOrderModal

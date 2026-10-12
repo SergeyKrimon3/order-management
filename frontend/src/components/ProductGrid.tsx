@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { formatAmount, formatDay } from "../format";
+import { formatAmount, formatDay, formatTime } from "../format";
 import { t } from "../i18n";
 import type { Order } from "../types/order";
 import { EmptyFavorites } from "./EmptyFavorites";
@@ -100,7 +100,7 @@ export function ProductGrid({
                             <span className="reorder-price">
                                 <span className="reorder-amount">{formatAmount(order.amount)}</span>
                                 <small className="reorder-created">
-                                    {t("createdOn")}: {formatDay(order.createdAt)}
+                                    {t("createdOn")}: {formatDay(order.createdAt)} {formatTime(order.createdAt)}
                                 </small>
                             </span>
                         </div>

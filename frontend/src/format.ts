@@ -45,6 +45,14 @@ export function formatDay(value: string): string {
     }).format(new Date(value));
 }
 
+export function formatTime(value: string): string {
+    return new Intl.DateTimeFormat("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "America/Sao_Paulo",
+    }).format(new Date(value));
+}
+
 export function parseAmount(value: string): number | null {
     const normalized = value.trim().replace(",", ".");
     if (normalized.length === 0) {
