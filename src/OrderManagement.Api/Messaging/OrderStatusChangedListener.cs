@@ -79,6 +79,6 @@ public sealed class OrderStatusChangedListener(
 
         await channel.BasicConsumeAsync(options.StatusQueue, autoAck: false, consumer, stoppingToken);
         logger.LogInformation("Order status listener is waiting for {Queue}.", options.StatusQueue);
-        await Task.Delay(Timeout.Infinite, stoppingToken);
+        await RabbitMqClient.WaitUntilClosedAsync(connection, channel, stoppingToken);
     }
 }

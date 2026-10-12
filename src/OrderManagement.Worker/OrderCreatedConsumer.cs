@@ -50,7 +50,7 @@ public sealed class OrderCreatedConsumer(
         consumer.ReceivedAsync += (_, delivery) => OnReceivedAsync(channel, gate, delivery, stoppingToken);
         await channel.BasicConsumeAsync(settings.Queue, autoAck: false, consumer, stoppingToken);
         logger.LogInformation("Order consumer is waiting for {Queue}.", settings.Queue);
-        await Task.Delay(Timeout.Infinite, stoppingToken);
+        await RabbitMqClient.WaitUntilClosedAsync(connection, channel, stoppingToken);
     }
 
     private async Task OnReceivedAsync(
