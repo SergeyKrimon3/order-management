@@ -24,8 +24,8 @@ services:
     image: rabbitmq:4-management-alpine
     container_name: rabbitmq
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-orders}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-orders}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-admin}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-admin}
     ports:
       - "127.0.0.1:${RABBITMQ_PORT:-5672}:5672"
       - "127.0.0.1:${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
@@ -66,8 +66,8 @@ services:
       TZ: America/Sao_Paulo
       ConnectionStrings__Orders: Host=postgres;Port=5432;Database=${POSTGRES_DB:-orders};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
       RabbitMQ__Host: rabbitmq
-      RabbitMQ__Username: ${RABBITMQ_USER:-orders}
-      RabbitMQ__Password: ${RABBITMQ_PASSWORD:-orders}
+      RabbitMQ__Username: ${RABBITMQ_USER:-admin}
+      RabbitMQ__Password: ${RABBITMQ_PASSWORD:-admin}
     ports:
       - "127.0.0.1:${API_PORT:-8080}:8080"
     depends_on:
@@ -93,8 +93,8 @@ services:
       TZ: America/Sao_Paulo
       ConnectionStrings__Orders: Host=postgres;Port=5432;Database=${POSTGRES_DB:-orders};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
       RabbitMQ__Host: rabbitmq
-      RabbitMQ__Username: ${RABBITMQ_USER:-orders}
-      RabbitMQ__Password: ${RABBITMQ_PASSWORD:-orders}
+      RabbitMQ__Username: ${RABBITMQ_USER:-admin}
+      RabbitMQ__Password: ${RABBITMQ_PASSWORD:-admin}
     ports:
       - "127.0.0.1:${WORKER_PORT:-8081}:8080"
     depends_on:

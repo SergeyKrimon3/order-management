@@ -6,6 +6,6 @@ public sealed record OrderCreatedMessage(Guid OrderId, Guid CorrelationId, strin
 
     public static OrderCreatedMessage Create(Guid orderId)
     {
-        return new OrderCreatedMessage(orderId, Guid.NewGuid(), EventName);
+        return new OrderCreatedMessage(orderId, orderId, EventName);
     }
 }

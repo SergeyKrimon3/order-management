@@ -71,6 +71,30 @@ public class OrderTests
     }
 
     [Fact]
+    public void CreatedMessage_UsesTheOrderAsCorrelation()
+    {
+        var orderId = Guid.NewGuid();
+
+        var message = OrderCreatedMessage.Create(orderId);
+
+        Assert.Equal(orderId, message.OrderId);
+        Assert.Equal(orderId, message.CorrelationId);
+        Assert.Equal(OrderCreatedMessage.EventName, message.EventType);
+    }
+
+    [Fact]
+    public void StatusChanged_UsesTheOrderStatus()
+    {
+        var orderId = Guid.NewGuid();
+
+        var message = OrderStatusChangedMessage.Create(orderId, OrderStatus.Processing);
+
+        Assert.Equal(orderId, message.OrderId);
+        Assert.Equal("processing", message.Status);
+        Assert.Equal(OrderStatusChangedMessage.EventName, message.EventType);
+    }
+
+    [Fact]
     public void RemainingPending_StaysVisibleForThreeSeconds()
     {
         var createdAt = new DateTime(2026, 10, 11, 20, 4, 41, DateTimeKind.Unspecified);

@@ -8,9 +8,11 @@ public sealed class RabbitMqOptions
 
     public int Port { get; set; } = 5672;
 
-    public string Username { get; set; } = "orders";
+    public string Username { get; set; } = "admin";
 
-    public string Password { get; set; } = "orders";
+    public string Password { get; set; } = "admin";
 
     public string Queue { get; set; } = "order-created";
+
+    public string StatusQueue { get; set; } = "order-status-changed";
 }

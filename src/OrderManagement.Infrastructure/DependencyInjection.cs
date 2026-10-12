@@ -30,17 +30,20 @@ public static class DependencyInjection
         {
             Host = rabbit["Host"] ?? "localhost",
             Port = int.TryParse(rabbit["Port"], out var port) ? port : 5672,
-            Username = rabbit["Username"] ?? "orders",
-            Password = rabbit["Password"] ?? "orders",
-            Queue = rabbit["Queue"] ?? "order-created"
+            Username = rabbit["Username"] ?? "admin",
+            Password = rabbit["Password"] ?? "admin",
+            Queue = rabbit["Queue"] ?? "order-created",
+            StatusQueue = rabbit["StatusQueue"] ?? "order-status-changed"
         });
         services.AddSingleton<IOrderCreatedPublisher, RabbitMqOrderCreatedPublisher>();
+        services.AddSingleton<IOrderStatusChangedPublisher, RabbitMqOrderStatusChangedPublisher>();
         services.AddScoped<OrderService>();
         services.AddScoped<FavoriteService>();
         services.AddScoped<OrderCreatedProcessor>();
 
         services.AddHealthChecks()
-            .AddDbContextCheck<OrdersDbContext>("postgresql");
+            .AddDbContextCheck<OrdersDbContext>("postgresql")
+            .AddCheck<RabbitMqHealthCheck>("rabbitmq");
 
         return services;
     }

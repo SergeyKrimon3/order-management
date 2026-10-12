@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { addFavorite, isOrderId, listFavorites, removeFavorite } from "./api/favorites";
 import { listOrders, createOrder } from "./api/orders";
 import { CreateOrderModal } from "./components/CreateOrderModal";
@@ -45,14 +45,23 @@ export default function App() {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [loadError, setLoadError] = useState("");
     const [createOpen, setCreateOpen] = useState(false);
+    const refreshGeneration = useRef(0);
 
     const refresh = useCallback(async () => {
+        const generation = refreshGeneration.current + 1;
+        refreshGeneration.current = generation;
         try {
             const items = await listOrders();
+            if (generation !== refreshGeneration.current) {
+                return;
+            }
+
             setOrders(items);
             setLoadError("");
         } catch {
-            setLoadError(t("loadError"));
+            if (generation === refreshGeneration.current) {
+                setLoadError(t("loadError"));
+            }
         }
     }, []);
 
@@ -65,11 +74,12 @@ export default function App() {
     }, []);
 
     useEffect(() => {
-        void refresh();
-        const timer = window.setInterval(() => {
+        const source = new EventSource("/api/orders/events");
+        source.onmessage = () => {
             void refresh();
-        }, 1000);
-        return () => window.clearInterval(timer);
+        };
+        void refresh();
+        return () => source.close();
     }, [refresh]);
 
     useEffect(() => {
@@ -157,6 +167,7 @@ export default function App() {
                                 image: order.image,
                                 repeatOf: order.id,
                             });
+                            setOrders((current) => [created, ...current.filter((item) => item.id !== created.id)]);
                             setSelectedId(created.id);
                             setScreen("orders");
                             void refresh();
@@ -194,6 +205,7 @@ export default function App() {
                     onClose={() => setCreateOpen(false)}
                     onCreated={(order) => {
                         setCreateOpen(false);
+                        setOrders((current) => [order, ...current.filter((item) => item.id !== order.id)]);
                         setSelectedId(order.id);
                         setScreen("orders");
                         void refresh();

@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using OrderManagement.Domain.Orders;
+using OrderManagement.Infrastructure.Messaging;
 using OrderManagement.Infrastructure.Persistence;
 
 namespace OrderManagement.Infrastructure.Orders;
 
-public sealed class OrderCreatedProcessor(OrdersDbContext database)
+public sealed class OrderCreatedProcessor(OrdersDbContext database, IOrderStatusChangedPublisher statusChanges)
 {
     public async Task ProcessAsync(Guid orderId, CancellationToken cancellationToken)
     {
@@ -27,6 +28,7 @@ public sealed class OrderCreatedProcessor(OrdersDbContext database)
             {
                 order.MarkAsProcessing();
                 await database.SaveChangesAsync(cancellationToken);
+                await statusChanges.PublishAsync(OrderStatusChangedMessage.Create(order.Id, order.Status), cancellationToken);
             }
         }
 
@@ -49,5 +51,6 @@ public sealed class OrderCreatedProcessor(OrdersDbContext database)
 
         order.MarkAsCompleted();
         await database.SaveChangesAsync(cancellationToken);
+        await statusChanges.PublishAsync(OrderStatusChangedMessage.Create(order.Id, order.Status), cancellationToken);
     }
 }
