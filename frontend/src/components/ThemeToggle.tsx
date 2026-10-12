@@ -4,9 +4,10 @@ import { t } from "../i18n";
 
 type Theme = "light" | "dark";
 
-const storageKey = "balcao-theme";
+const storageKey = "theme";
 
 function readTheme(): Theme {
+    localStorage.removeItem("balcao-theme");
     return localStorage.getItem(storageKey) === "light" ? "light" : "dark";
 }
 

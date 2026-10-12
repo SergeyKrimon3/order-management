@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { addFavorite, isOrderId, listFavorites, removeFavorite } from "./api/favorites";
 import { listOrders, createOrder } from "./api/orders";
-import { findProduct } from "./catalog";
-import { CartPanel } from "./components/CartPanel";
 import { CreateOrderModal } from "./components/CreateOrderModal";
 import { OrderDetail } from "./components/OrderDetail";
 import { OrderList } from "./components/OrderList";
@@ -14,12 +13,10 @@ import { t, type MessageKey } from "./i18n";
 import type { Order } from "./types/order";
 
 const favoritesKey = "favorites";
-const cartKey = "cart";
 
 const screenTitle: Record<Screen, MessageKey> = {
     catalog: "catalog",
     favorites: "favorites",
-    cart: "cart",
     orders: "orders",
 };
 
@@ -41,15 +38,9 @@ function readFavorites(): string[] {
     }
 }
 
-function readCart(): string | null {
-    const stored = localStorage.getItem(cartKey);
-    return stored && findProduct(stored) ? stored : null;
-}
-
 export default function App() {
     const [screen, setScreen] = useState<Screen>("catalog");
-    const [favoriteIds, setFavoriteIds] = useState<string[]>(readFavorites);
-    const [cartId, setCartId] = useState<string | null>(readCart);
+    const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [loadError, setLoadError] = useState("");
@@ -82,22 +73,50 @@ export default function App() {
     }, [refresh]);
 
     useEffect(() => {
-        localStorage.setItem(favoritesKey, JSON.stringify(favoriteIds));
-    }, [favoriteIds]);
+        let cancelled = false;
 
-    useEffect(() => {
-        if (cartId) {
-            localStorage.setItem(cartKey, cartId);
-            return;
+        async function loadFavorites() {
+            const stored = readFavorites().filter(isOrderId);
+            try {
+                for (const id of stored) {
+                    try {
+                        await addFavorite(id);
+                    } catch {
+                        continue;
+                    }
+                }
+
+                const items = await listFavorites();
+                localStorage.removeItem(favoritesKey);
+                localStorage.removeItem("cart");
+                if (!cancelled) {
+                    setFavoriteIds(items.map((item) => item.orderId));
+                }
+            } catch {
+                if (!cancelled) {
+                    setFavoriteIds(stored);
+                }
+            }
         }
 
-        localStorage.removeItem(cartKey);
-    }, [cartId]);
+        void loadFavorites();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     function toggleFavorite(id: string) {
+        const exists = favoriteIds.includes(id);
         setFavoriteIds((current) =>
-            current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
+            exists ? current.filter((item) => item !== id) : [...current, id],
         );
+
+        const request = exists ? removeFavorite(id) : addFavorite(id);
+        void request.catch(() => {
+            setFavoriteIds((current) =>
+                exists ? [...current, id] : current.filter((item) => item !== id),
+            );
+        });
     }
 
     const selected = orders.find((order) => order.id === selectedId) ?? null;
@@ -157,42 +176,18 @@ export default function App() {
                         <Icon paths={iconPaths.heart} filled={favoriteOrders.length > 0} />
                         {favoriteOrders.length > 0 ? <span className="badge">{favoriteOrders.length}</span> : null}
                     </button>
-                    <button
-                        type="button"
-                        className={screen === "cart" ? "icon-button active" : "icon-button"}
-                        aria-label={t("cart")}
-                        onClick={() => setScreen(screen === "cart" ? "catalog" : "cart")}
-                    >
-                        <Icon paths={iconPaths.cart} />
-                        {cartId ? <span className="badge">1</span> : null}
-                    </button>
                     <ThemeToggle />
                 </div>
-                {screen === "cart" ? (
-                    <CartPanel
-                        product={cartId ? findProduct(cartId) : null}
-                        onBrowse={() => setScreen("catalog")}
-                        onCreated={(order) => {
-                            setCartId(null);
-                            setSelectedId(order.id);
-                            setScreen("orders");
-                            void refresh();
-                        }}
-                    />
-                ) : (
-                    <>
-                        <h2>{t("ordersNow")}</h2>
-                        {loadError ? <p className="field-error">{loadError}</p> : null}
-                        <OrderRail
-                            orders={orders}
-                            selectedId={selectedId}
-                            onSelect={(id) => {
-                                setSelectedId(id);
-                                setScreen("orders");
-                            }}
-                        />
-                    </>
-                )}
+                <h2>{t("ordersNow")}</h2>
+                {loadError ? <p className="field-error">{loadError}</p> : null}
+                <OrderRail
+                    orders={orders}
+                    selectedId={selectedId}
+                    onSelect={(id) => {
+                        setSelectedId(id);
+                        setScreen("orders");
+                    }}
+                />
             </aside>
             {createOpen ? (
                 <CreateOrderModal

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { formatAmount, formatDay } from "../format";
 import { t } from "../i18n";
 import type { Order } from "../types/order";
+import { EmptyFavorites } from "./EmptyFavorites";
 import { Icon, iconPaths } from "./Icon";
 
 interface ProductGridProps {
@@ -22,9 +23,10 @@ export function ProductGrid({
     onCreateOrder,
 }: ProductGridProps) {
     const [reorderingId, setReorderingId] = useState<string | null>(null);
+    const [pulsingId, setPulsingId] = useState<string | null>(null);
 
     if (orders.length === 0 && !onCreateOrder) {
-        return <p className="empty">{t("emptyFavorites")}</p>;
+        return <EmptyFavorites />;
     }
 
     async function reorder(order: Order) {
@@ -49,6 +51,11 @@ export function ProductGrid({
             {orders.map((order) => {
                 const favorite = favoriteIds.includes(order.id);
                 const reordering = reorderingId === order.id;
+                const heartClass = favorite
+                    ? pulsingId === order.id
+                        ? "heart-float is-on is-pulse"
+                        : "heart-float is-on"
+                    : "heart-float";
                 return (
                     <li key={order.id} className="photo-card">
                         <div className="photo-frame">
@@ -65,10 +72,20 @@ export function ProductGrid({
                             />
                             <button
                                 type="button"
-                                className={favorite ? "heart-float is-on" : "heart-float"}
+                                className={heartClass}
                                 aria-label={favorite ? t("favoriteRemove") : t("favoriteAdd")}
                                 aria-pressed={favorite}
-                                onClick={() => onToggleFavorite(order.id)}
+                                onAnimationEnd={() => {
+                                    if (pulsingId === order.id) {
+                                        setPulsingId(null);
+                                    }
+                                }}
+                                onClick={() => {
+                                    if (!favorite) {
+                                        setPulsingId(order.id);
+                                    }
+                                    onToggleFavorite(order.id);
+                                }}
                             >
                                 <Icon paths={iconPaths.heart} filled={favorite} />
                             </button>

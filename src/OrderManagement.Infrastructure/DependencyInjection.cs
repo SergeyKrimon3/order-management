@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using OrderManagement.Infrastructure.Favorites;
 using OrderManagement.Infrastructure.Messaging;
 using OrderManagement.Infrastructure.Orders;
 using OrderManagement.Infrastructure.Persistence;
@@ -35,6 +36,7 @@ public static class DependencyInjection
         });
         services.AddSingleton<IOrderCreatedPublisher, RabbitMqOrderCreatedPublisher>();
         services.AddScoped<OrderService>();
+        services.AddScoped<FavoriteService>();
         services.AddScoped<OrderCreatedProcessor>();
 
         services.AddHealthChecks()

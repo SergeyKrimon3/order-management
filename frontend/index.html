@@ -10,7 +10,8 @@
         <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@420;520;650&display=swap" rel="stylesheet" />
         <script>
             try {
-                var theme = localStorage.getItem("balcao-theme");
+                localStorage.removeItem("balcao-theme");
+                var theme = localStorage.getItem("theme");
                 document.documentElement.dataset.theme = theme === "light" ? "light" : "dark";
             } catch (error) {}
         </script>

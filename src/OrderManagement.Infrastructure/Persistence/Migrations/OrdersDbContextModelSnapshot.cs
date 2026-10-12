@@ -22,6 +22,29 @@ namespace OrderManagement.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("OrderManagement.Domain.Favorites.Favorite", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("order_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId")
+                        .IsUnique();
+
+                    b.ToTable("favorites", (string)null);
+                });
+
             modelBuilder.Entity("OrderManagement.Domain.Orders.Order", b =>
                 {
                     b.Property<Guid>("Id")
@@ -144,6 +167,15 @@ namespace OrderManagement.Infrastructure.Persistence.Migrations
                             Status = "completed",
                             UpdatedAt = new DateTime(2026, 10, 11, 20, 4, 41, 0, DateTimeKind.Unspecified)
                         });
+                });
+
+            modelBuilder.Entity("OrderManagement.Domain.Favorites.Favorite", b =>
+                {
+                    b.HasOne("OrderManagement.Domain.Orders.Order", null)
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }
