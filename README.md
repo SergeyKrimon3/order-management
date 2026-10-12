@@ -49,9 +49,9 @@ Se pular este passo, o `docker compose` usa os mesmos padrões do `.env.example`
 | `API_PORT` | `8080` | Porta da API |
 | `WORKER_PORT` | `8081` | Porta do healthcheck do worker |
 | `FRONTEND_PORT` | `5173` | Porta do frontend |
-| `LLM_API_KEY` | vazio | Chave do modelo. Sem ela, o chat não responde |
-| `LLM_BASE_URL` | `https://api.openai.com/v1` | Endereço de uma API compatível com a OpenAI |
-| `LLM_MODEL` | `gpt-4o-mini` | Nome do modelo |
+| `LLM_API_KEY` | vazio | Chave do [Ollama Cloud](https://ollama.com/). Sem ela, o chat não responde |
+| `LLM_BASE_URL` | `https://ollama.com/v1` | Endereço do Ollama, no formato de chat da OpenAI |
+| `LLM_MODEL` | `gpt-oss:20b` | Modelo usado no chat |
 
 `ConnectionStrings__Orders` no `.env` serve para rodar a API direto na máquina, com host `localhost`. Dentro do Docker a API usa o host `postgres`, definido pelo Compose.
 
@@ -166,28 +166,23 @@ O chat ao lado dos favoritos é o marco opcional do projeto. Não há perguntas 
 
 O ícone de IA abre o chat. Enter envia. Enquanto o modelo trabalha, o balão mostra **Pensando** com três bolinhas. Quando a resposta chega, o cursor volta para o campo. Fechar o modal encerra a conversa.
 
-O padrão do repositório é uma API compatível com a OpenAI, modelo `gpt-4o-mini`. A chave fica só no `.env`, na variável `LLM_API_KEY`. Esse arquivo não entra no Git. Sem a chave, `POST /orders/ask` responde `503`.
+O chat usa o [Ollama Cloud](https://ollama.com/), modelo `gpt-oss:20b`. A chamada segue o formato de chat da OpenAI, em `https://ollama.com/v1/chat/completions`. A chave fica só no `.env`, na variável `LLM_API_KEY`, criada em [ollama.com/settings/keys](https://ollama.com/settings/keys). Esse arquivo não entra no Git. Sem a chave, `POST /orders/ask` responde `503`.
 
-| Item | Valor no código |
+| Item | Valor |
 | --- | --- |
-| Formato | Chat da OpenAI, em `{base}/chat/completions` |
-| Modelo padrão | `gpt-4o-mini` |
+| Provedor | [Ollama Cloud](https://ollama.com/) |
+| Endereço | `https://ollama.com/v1` |
+| Modelo | `gpt-oss:20b` |
 | Temperatura | `0`, para a resposta seguir os dados |
 | Espera máxima | 60 segundos na API |
 
-Trocar de modelo é mudar três variáveis e recriar o container da API. Para o [Ollama Cloud](https://ollama.com), com chave criada em [ollama.com/settings/keys](https://ollama.com/settings/keys):
+Quando a URL contém `ollama.com`, a chamada manda `think: false`, então a resposta vem direto, sem o raciocínio interno do modelo.
 
-```env
-LLM_API_KEY=sua-chave
-LLM_BASE_URL=https://ollama.com/v1
-LLM_MODEL=gpt-oss:20b
-```
+Outra API compatível com a OpenAI entra no lugar trocando as três variáveis e recriando o container da API. Um Ollama local usa, por exemplo, `LLM_BASE_URL=http://host.docker.internal:11434/v1`.
 
 ```bash
 docker compose up -d --force-recreate --no-deps api
 ```
-
-Quando a URL contém `ollama.com`, a chamada manda `think: false`, então a resposta vem direto, sem o raciocínio interno do modelo. Um Ollama local usa, por exemplo, `LLM_BASE_URL=http://host.docker.internal:11434/v1`.
 
 O Compose entrega essas variáveis só para a API, como `Llm__BaseUrl`, `Llm__ApiKey` e `Llm__Model`. O worker não chama o modelo.
 
@@ -281,7 +276,7 @@ sequenceDiagram
 | React + Vite | A tela é um CRUD, com textos em português, inglês e espanhol. Não há renderização no servidor. |
 | Docker Compose | Sobe API, worker, frontend, PostgreSQL, RabbitMQ e pgAdmin com um comando. Segredos ficam em variáveis de ambiente. |
 | pgAdmin | Administração do banco dentro do Compose. O DBeaver continua disponível na máquina local. |
-| Chat com API compatível com a OpenAI | O modelo recebe pedidos, favoritos e a conversa aberta, e escreve a resposta. Não há perguntas nem frases prontas. |
+| Ollama Cloud `gpt-oss:20b` | O chat chama `https://ollama.com/v1`. O modelo recebe pedidos, favoritos e a conversa aberta, e escreve a resposta. Não há perguntas nem frases prontas. |
 
 ## Estrutura
 
