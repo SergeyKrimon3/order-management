@@ -97,13 +97,26 @@ O banco `tmb-local` fica em `Schemas` → `public` → `Tables`.
 
 Em `orders`, `created_at` e `updated_at` são as últimas colunas. Em `outbox_messages`, `created_at` e `published_at` são as últimas.
 
-No pgAdmin:
+No pgAdmin, que sobe junto com o projeto em http://localhost:5050:
 
-1. Abra http://localhost:5050
-2. Entre com `admin@local.dev` e senha `admin`
-3. Cadastre o servidor com host `postgres`, porta `5432`, banco `tmb-local`, usuário `postgres` e senha `postgres`
+1. Entre com `admin@local.dev` e senha `admin`.
+2. Clique com o botão direito em **Servers** → **Register** → **Server**.
+3. Na aba **General**, em **Name**, use `tmb-local`.
+4. Na aba **Connection**, preencha:
 
-No DBeaver, na sua máquina:
+| Campo | Valor |
+| --- | --- |
+| Host name/address | `postgres` |
+| Port | `5432` |
+| Maintenance database | `tmb-local` |
+| Username | `postgres` |
+| Password | `postgres` |
+
+Marque **Save password**. Se aparecer SSL mode, escolha **Disable**.
+
+O host aqui é `postgres`, o nome do serviço no Docker. `localhost` nesse formulário aponta para o próprio pgAdmin, e a conexão na porta `5432` é recusada.
+
+No DBeaver, instalado na sua máquina, o host muda porque a porta do banco está publicada no Windows:
 
 | Campo | Valor |
 | --- | --- |
@@ -113,7 +126,7 @@ No DBeaver, na sua máquina:
 | Username | `postgres` |
 | Password | `postgres` |
 
-Se o DBeaver pedir SSL, desative. Este Postgres local não usa certificado.
+Se o DBeaver pedir SSL, desative. Este Postgres local não usa certificado. O host `postgres` só resolve dentro da rede do Docker.
 
 ## 7. Encerrar
 
