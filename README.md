@@ -181,6 +181,12 @@ A lista e a página do pedido escutam `GET /orders/events`. Cada mudança de sta
 
 Se o stream cair, a tela passa a consultar o pedido a cada 3 segundos: a lista chama `GET /orders` e a página do pedido chama `GET /orders/{id}`. Quando a conexão volta, essa consulta para e o stream segue como canal principal.
 
+## Testes com dependências reais
+
+Os testes de integração sobem um PostgreSQL 17 e um RabbitMQ 4 só para aquela execução, com Testcontainers. O teste aplica as migrations nesse banco, cria um pedido e espera o relay publicar na fila real e o consumidor finalizar o pedido. No fim, os dois containers são apagados. O banco `tmb-local` e a fila do Compose não entram nesse teste.
+
+O que a suíte confere: a linha em `orders`, as três mensagens em `outbox_messages` com `published_at` preenchido, e o histórico pendente, processando e finalizado.
+
 ## Decisões técnicas
 
 | Escolha | Motivo |
@@ -191,6 +197,7 @@ Se o stream cair, a tela passa a consultar o pedido a cada 3 segundos: a lista c
 | Outbox | A mensagem nasce na mesma transação do pedido. O relay publica no RabbitMQ depois. |
 | Histórico de status | Cada transição fica em `order_status_history`, na mesma transação do status. |
 | Status ao vivo | O frontend escuta o stream de eventos. Se ele cair, consulta o pedido a cada 3 segundos até a conexão voltar. |
+| Testes de integração | PostgreSQL e RabbitMQ sobem em containers descartáveis. O fluxo do pedido roda neles e os containers somem no fim. |
 | React + Vite | A tela é um CRUD. Não há renderização no servidor. |
 | Docker Compose | Sobe API, worker, frontend, PostgreSQL e pgAdmin com um comando. Segredos ficam em variáveis de ambiente. |
 | pgAdmin | Administração do banco dentro do Compose. O DBeaver continua disponível na máquina local. |
