@@ -509,9 +509,11 @@ export function CreateOrderModal({ liveOrder, repeatOrder = null, onClose, onCre
                     {imageMissing ? <span className="field-required">{t("requiredField")}</span> : null}
                 </div>
                 {error ? <p className="field-error">{error}</p> : null}
-                <button type="submit" className="buy blue" disabled={saving || imageMissing}>
-                    {saving ? t("creatingOrder") : t("createOrder")}
-                </button>
+                <div className="modal-submit">
+                    <button type="submit" className="reorder-action" disabled={saving || imageMissing}>
+                        {saving ? t("creatingOrder") : t("createOrder")}
+                    </button>
+                </div>
                 </>
                 )}
             </form>

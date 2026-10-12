@@ -52,8 +52,13 @@ export default function App() {
     return <StoreApp />;
 }
 
+function initialScreen(): Screen {
+    const screen = new URLSearchParams(window.location.search).get("screen");
+    return screen === "orders" ? "orders" : "catalog";
+}
+
 function StoreApp() {
-    const [screen, setScreen] = useState<Screen>(window.location.hash === "#orders" ? "orders" : "catalog");
+    const [screen, setScreen] = useState<Screen>(initialScreen);
     const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
     const [loadError, setLoadError] = useState("");

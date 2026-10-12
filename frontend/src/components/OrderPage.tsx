@@ -67,7 +67,7 @@ export function OrderPage({ id }: OrderPageProps) {
                     </a>
                     <nav className="nav" aria-label={t("menu")}>
                         <a href="/">{t("catalog")}</a>
-                        <a href="/#orders">{t("orders")}</a>
+                        <a href="/?screen=orders">{t("orders")}</a>
                     </nav>
                     <ThemeToggle />
                 </header>

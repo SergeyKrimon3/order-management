@@ -21,8 +21,8 @@ interface SortState {
 }
 
 const columns: readonly { key: SortKey; label: "customer" | "product" | "amount" | "status" | "createdAt" }[] = [
-    { key: "customer", label: "customer" },
     { key: "product", label: "product" },
+    { key: "customer", label: "customer" },
     { key: "amount", label: "amount" },
     { key: "status", label: "status" },
     { key: "createdAt", label: "createdAt" },
@@ -154,6 +154,19 @@ function ViewOrder({ id }: { id: string }) {
             <Icon paths={iconPaths.eye} />
             <span className="view-order-tip" aria-hidden="true">{t("viewOrder")}</span>
         </a>
+    );
+}
+
+function ProductCell({ order }: { order: Order }) {
+    return (
+        <span className="product-cell">
+            {order.image ? (
+                <img className="product-thumb" src={order.image} alt="" />
+            ) : (
+                <span className="product-thumb is-fallback">{order.product.slice(0, 1)}</span>
+            )}
+            <span>{order.product}</span>
+        </span>
     );
 }
 
@@ -301,8 +314,8 @@ export function OrderList({ orders, onSelect }: OrderListProps) {
                     <tbody>
                         {visible.map((order) => (
                             <tr key={order.id} onClick={() => onSelect(order.id)}>
+                                <td><ProductCell order={order} /></td>
                                 <td>{order.customer}</td>
-                                <td>{order.product}</td>
                                 <td>{formatAmount(order.amount)}</td>
                                 <td>
                                     <span className="order-lead is-stacked">
@@ -329,8 +342,8 @@ export function OrderList({ orders, onSelect }: OrderListProps) {
                             className="card"
                             onClick={() => onSelect(order.id)}
                         >
-                            <strong>{order.customer}</strong>
-                            <span>{order.product}</span>
+                            <ProductCell order={order} />
+                            <span>{order.customer}</span>
                             <span>{formatAmount(order.amount)}</span>
                             <span className="order-lead is-stacked">
                                 <span className={`pill ${order.status}`}>{statusLabel(order.status)}</span>
