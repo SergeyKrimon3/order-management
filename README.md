@@ -1,6 +1,6 @@
 # Gestão de pedidos
 
-Sistema de gestão de pedidos com API .NET, worker, PostgreSQL e interface React.
+Sistema de gestão de pedidos com API .NET, worker, PostgreSQL, RabbitMQ e interface React.
 
 Para configurar e iniciar, só é preciso o Docker. .NET e Node rodam dentro dos containers.
 
@@ -8,7 +8,7 @@ Para configurar e iniciar, só é preciso o Docker. .NET e Node rodam dentro dos
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado e em execução
 - Git
-- Portas livres: `5173`, `8080`, `8081`, `5050` e `5432`
+- Portas livres: `5173`, `8080`, `8081`, `5050`, `5432`, `5672` e `15672`
 
 ## 2. Clonar o repositório
 
@@ -42,6 +42,10 @@ Se pular este passo, o `docker compose` usa os mesmos padrões do `.env.example`
 | `PGADMIN_DEFAULT_EMAIL` | `admin@local.dev` | Login do pgAdmin |
 | `PGADMIN_DEFAULT_PASSWORD` | `admin` | Senha do pgAdmin |
 | `PGADMIN_PORT` | `5050` | Porta do pgAdmin |
+| `RABBITMQ_USER` | `admin` | Usuário do RabbitMQ |
+| `RABBITMQ_PASSWORD` | `admin` | Senha do RabbitMQ |
+| `RABBITMQ_PORT` | `5672` | Porta AMQP na sua máquina |
+| `RABBITMQ_MANAGEMENT_PORT` | `15672` | Porta do painel do RabbitMQ |
 | `API_PORT` | `8080` | Porta da API |
 | `WORKER_PORT` | `8081` | Porta do healthcheck do worker |
 | `FRONTEND_PORT` | `5173` | Porta do frontend |
@@ -59,7 +63,7 @@ Na raiz do repositório:
 docker compose up --build -d
 ```
 
-Esse é o único comando de subida. Na primeira vez ele baixa as imagens, compila API, worker e frontend, sobe os cinco serviços e a API aplica as migrations. Espere até os containers ficarem saudáveis.
+Esse é o comando de subida. Na primeira vez ele baixa as imagens, compila API, worker e frontend, sobe os serviços e a API aplica as migrations. Espere até os containers ficarem saudáveis.
 
 ## 5. Conferir se subiu
 
@@ -67,7 +71,7 @@ Esse é o único comando de subida. Na primeira vez ele baixa as imagens, compil
 docker compose ps
 ```
 
-Os cinco serviços precisam estar `healthy`: `postgres`, `api`, `worker`, `frontend` e `pgadmin`.
+Estes serviços precisam estar `healthy`: `postgres`, `rabbitmq`, `api`, `worker`, `frontend` e `pgadmin`.
 
 | Serviço | Endereço |
 | --- | --- |
@@ -76,12 +80,22 @@ Os cinco serviços precisam estar `healthy`: `postgres`, `api`, `worker`, `front
 | Worker | http://localhost:8081/health |
 | pgAdmin | http://localhost:5050 |
 | PostgreSQL | `localhost:5432` |
+| RabbitMQ | `localhost:5672` (painel em http://localhost:15672) |
 
-`/health` responde `Healthy` quando o processo e a dependência conferida estão no ar. A API também testa o PostgreSQL.
+`/health` responde `Healthy` quando o processo, o PostgreSQL e o RabbitMQ estão no ar. API e worker fazem essa checagem.
 
 ## 6. Abrir o banco
 
-As tabelas `orders` e `favorites` ficam em `tmb-local` → `Schemas` → `public` → `Tables`.
+O banco `tmb-local` fica em `Schemas` → `public` → `Tables`.
+
+| Tabela | O que guarda |
+| --- | --- |
+| `orders` | Pedido: cliente, produto, valor, status, imagem, pedido de origem e datas |
+| `order_status_history` | Cada passagem de status, com a data da mudança |
+| `outbox_messages` | Mensagem ainda não publicada, ou já publicada, no RabbitMQ |
+| `favorites` | Pedido marcado como favorito |
+
+Em `orders`, `created_at` e `updated_at` são as últimas colunas. Em `outbox_messages`, `created_at` e `published_at` são as últimas.
 
 No pgAdmin:
 
@@ -109,28 +123,59 @@ docker compose down
 
 O volume do banco é mantido. Para apagar os dados também: `docker compose down -v`.
 
+## Pedidos
+
+A tela lista, cria, repete e abre o pedido. O status segue uma ordem só: pendente, processando, finalizado.
+
+| Método | Caminho | Uso |
+| --- | --- | --- |
+| `POST` | `/orders` | Cria o pedido |
+| `GET` | `/orders` | Lista, sem o histórico |
+| `GET` | `/orders/{id}` | Detalhe, com o histórico em `history` |
+| `GET` | `/orders/events` | Stream das mudanças de status |
+| `POST` | `/orders/ask` | Pergunta ao modelo sobre os dados |
+| `GET` | `/favorites` | Lista os favoritos |
+| `POST` | `/favorites` | Marca um pedido |
+| `DELETE` | `/favorites/{orderId}` | Remove o favorito |
+
+O frontend chama esses caminhos em `/api/...`.
+
+## Mensageria transacional
+
+Criar um pedido, ou mudar o status dele, grava a linha de negócio e a mensagem na mesma transação do PostgreSQL. A mensagem fica em `outbox_messages`, com `published_at` vazio. O RabbitMQ não entra nessa transação.
+
+Um relay na API e outro no worker leem as mensagens ainda não publicadas com `FOR UPDATE SKIP LOCKED`, publicam na fila e só então preenchem `published_at`. Se o RabbitMQ estiver fora, o pedido continua salvo e a mensagem espera. As duas instâncias do relay não publicam a mesma linha ao mesmo tempo. Se o processo cair depois de publicar e antes de marcar, a mensagem sai de novo: o worker ignora um pedido que já está finalizado.
+
+`OrderCreated` vai para a fila `order-created`. `OrderStatusChanged` vai para `order-status-changed`. As duas filas são duráveis e a mensagem é persistente.
+
+## Histórico de status
+
+Cada pedido guarda a trilha em `order_status_history`: pendente na criação, depois processando e finalizado. A linha entra na mesma transação da mudança, junto com a mensagem do outbox. A página do pedido mostra essa trilha, com a data e a hora de cada passo.
+
+Pedidos que já existiam antes desta tabela recebem o que dá para reconstruir: pendente na data de criação e, se o status atual for outro, esse status na data de atualização. O instante do "processando" desses pedidos antigos não foi guardado.
+
+## Status ao vivo
+
+A lista e a página do pedido escutam `GET /orders/events`. Cada mudança de status chega por esse stream e a tela busca o pedido de novo. A API manda um ping a cada 15 segundos para a conexão não morrer em silêncio.
+
+Se o stream cair, a tela passa a consultar o pedido a cada 3 segundos: a lista chama `GET /orders` e a página do pedido chama `GET /orders/{id}`. Quando a conexão volta, essa consulta para e o stream segue como canal principal.
+
 ## Pergunte a IA
 
 O chat ao lado dos favoritos é o marco opcional do projeto. Não há perguntas prontas nem frases gravadas. A pessoa escreve em linguagem livre e o modelo responde com o que está no banco.
 
 O ícone de IA abre o chat. Enter envia. Enquanto o modelo trabalha, o balão mostra **Pensando** com três bolinhas. Quando a resposta chega, o cursor volta para o campo. Fechar o modal encerra a conversa.
 
-### Modelo em uso
+O padrão do repositório é uma API compatível com a OpenAI, modelo `gpt-4o-mini`. A chave fica só no `.env`, na variável `LLM_API_KEY`. Esse arquivo não entra no Git. Sem a chave, `POST /orders/ask` responde `503`.
 
-Este ambiente usa o **Ollama Cloud**, com o modelo **`gpt-oss:20b`**.
-
-| Item | Valor |
+| Item | Valor no código |
 | --- | --- |
-| Provedor | [Ollama Cloud](https://ollama.com) |
-| API | `https://ollama.com/v1`, no formato de chat da OpenAI |
-| Modelo | `gpt-oss:20b` |
-| Autenticação | `Bearer`, com uma chave criada em [ollama.com/settings/keys](https://ollama.com/settings/keys) |
+| Formato | Chat da OpenAI, em `{base}/chat/completions` |
+| Modelo padrão | `gpt-4o-mini` |
 | Temperatura | `0`, para a resposta seguir os dados |
 | Espera máxima | 60 segundos na API |
 
-A chave fica só no `.env`, na variável `LLM_API_KEY`. Esse arquivo não entra no Git. Para o Ollama Cloud, a chamada manda `think: false`, então a resposta vem direto, sem o raciocínio interno do modelo.
-
-O código aceita qualquer API compatível com a OpenAI. Trocar de modelo é mudar três variáveis e recriar o container da API:
+Trocar de modelo é mudar três variáveis e recriar o container da API. Para o [Ollama Cloud](https://ollama.com), com chave criada em [ollama.com/settings/keys](https://ollama.com/settings/keys):
 
 ```env
 LLM_API_KEY=sua-chave
@@ -142,7 +187,7 @@ LLM_MODEL=gpt-oss:20b
 docker compose up -d --force-recreate --no-deps api
 ```
 
-Um Ollama local usa, por exemplo, `LLM_BASE_URL=http://host.docker.internal:11434/v1`. A OpenAI usa `https://api.openai.com/v1` e o nome do modelo desejado. Com essa URL da OpenAI e sem `LLM_API_KEY`, `POST /orders/ask` responde `503`.
+Quando a URL contém `ollama.com`, a chamada manda `think: false`, então a resposta vem direto, sem o raciocínio interno do modelo. Um Ollama local usa, por exemplo, `LLM_BASE_URL=http://host.docker.internal:11434/v1`.
 
 O Compose entrega essas variáveis só para a API, como `Llm__BaseUrl`, `Llm__ApiKey` e `Llm__Model`. O worker não chama o modelo.
 
@@ -157,35 +202,7 @@ A cada pergunta a API lê o PostgreSQL e monta o contexto. O modelo não escreve
 
 Se a resposta não estiver nesses dados, o modelo diz que não sabe. Ele não inventa pedido, favorito, produto, cliente, valor nem data. A resposta sai no idioma da pergunta, em uma ou duas frases, sem markdown.
 
-O endpoint é `POST /orders/ask`. O corpo leva `question` (de 1 a 1000 caracteres), `locale` e `history`. O frontend chama isso em `/api/orders/ask`. O nginx espera até 90 segundos por essa resposta.
-
-## Mensageria transacional
-
-Criar um pedido, ou mudar o status dele, grava a linha de negócio e a mensagem na mesma transação do PostgreSQL. A mensagem fica em `outbox_messages`, com `published_at` vazio. O RabbitMQ não entra nessa transação.
-
-Um relay na API e outro no worker leem as mensagens ainda não publicadas com `FOR UPDATE SKIP LOCKED`, publicam na fila e só então preenchem `published_at`. Se o RabbitMQ estiver fora, o pedido continua salvo e a mensagem espera. As duas instâncias do relay não publicam a mesma linha ao mesmo tempo. Se o processo cair depois de publicar e antes de marcar, a mensagem sai de novo: o worker ignora um pedido que já está finalizado.
-
-`OrderCreated` vai para a fila `order-created`. `OrderStatusChanged` vai para `order-status-changed`.
-
-## Histórico de status
-
-Cada pedido guarda a trilha dos status em `order_status_history`: pendente na criação, depois processando e finalizado. A linha entra na mesma transação da mudança, junto com a mensagem do outbox. A página do pedido mostra essa trilha, com a data e a hora de cada passo.
-
-Pedidos que já existiam antes desta tabela recebem o que dá para reconstruir: pendente na data de criação e, se o status atual for outro, esse status na data de atualização. O instante do "processando" desses pedidos antigos não foi guardado.
-
-O detalhe `GET /orders/{id}` devolve a lista em `history`. A listagem não traz essa lista.
-
-## Status ao vivo
-
-A lista e a página do pedido escutam `GET /orders/events`. Cada mudança de status chega por esse stream e a tela busca o pedido de novo. A API manda um ping a cada 15 segundos para a conexão não morrer em silêncio.
-
-Se o stream cair, a tela passa a consultar o pedido a cada 3 segundos: a lista chama `GET /orders` e a página do pedido chama `GET /orders/{id}`. Quando a conexão volta, essa consulta para e o stream segue como canal principal.
-
-## Testes com dependências reais
-
-Os testes de integração sobem um PostgreSQL 17 e um RabbitMQ 4 só para aquela execução, com Testcontainers. O teste aplica as migrations nesse banco, cria um pedido e espera o relay publicar na fila real e o consumidor finalizar o pedido. No fim, os dois containers são apagados. O banco `tmb-local` e a fila do Compose não entram nesse teste.
-
-O que a suíte confere: a linha em `orders`, as três mensagens em `outbox_messages` com `published_at` preenchido, e o histórico pendente, processando e finalizado.
+O corpo de `POST /orders/ask` leva `question` (de 1 a 1000 caracteres), `locale` e `history`. O nginx espera até 90 segundos por essa resposta.
 
 ## Tracing ponta a ponta
 
@@ -193,9 +210,19 @@ Criar um pedido abre um trace no padrão W3C. O `traceparent` fica na linha do o
 
 O health check não entra nesse trace.
 
-## Golden tests
+## Testes
 
-Os contratos JSON aprovados ficam em `tests/OrderManagement.Tests/Golden`. O teste serializa o detalhe do pedido, a listagem, o payload do outbox e o evento de status, e compara o texto com esses arquivos. Uma mudança de campo, nome ou formato quebra a suíte até o arquivo ser atualizado de propósito.
+Na raiz do repositório, com o Docker ligado:
+
+```bash
+dotnet test tests/OrderManagement.Tests
+```
+
+A suíte tem três grupos:
+
+- **Regras**, sem subir o Compose: status do pedido, favoritos, e o outbox gravado na mesma transação do pedido. O rollback desfaz pedido, histórico e mensagem juntos.
+- **Golden tests**, em `tests/OrderManagement.Tests/Golden`. O teste serializa o detalhe do pedido, a listagem, o payload do outbox e o evento de status, e compara o texto com esses arquivos. Uma mudança de campo, nome ou formato quebra a suíte até o arquivo ser atualizado de propósito.
+- **Fluxo real**. O teste sobe um PostgreSQL 17 e um RabbitMQ 4 só para aquela execução, com Testcontainers. Aplica as migrations nesse banco, cria um pedido e espera o relay publicar na fila real e o consumidor finalizar o pedido. No fim, os dois containers são apagados. O banco `tmb-local` e a fila do Compose não entram nesse teste. Ele confere a linha em `orders`, as três mensagens em `outbox_messages` com `published_at` preenchido, o histórico pendente, processando e finalizado, e o mesmo `traceparent` nas três mensagens.
 
 ## Decisões técnicas
 
@@ -203,33 +230,27 @@ Os contratos JSON aprovados ficam em `tests/OrderManagement.Tests/Golden`. O tes
 | --- | --- |
 | .NET 10 | API e worker na linha atual do SDK, publicados nas imagens Docker. |
 | EF Core + Npgsql | Migrations versionadas no código e acesso tipado ao PostgreSQL. A API aplica as migrations ao iniciar. |
-| RabbitMQ | Fila durável para `OrderCreated` e `OrderStatusChanged`, com `CorrelationId` e `EventType`. |
+| RabbitMQ | Filas duráveis para `OrderCreated` e `OrderStatusChanged`, com `CorrelationId` e `EventType`. |
 | Outbox | A mensagem nasce na mesma transação do pedido. O relay publica no RabbitMQ depois. |
 | Histórico de status | Cada transição fica em `order_status_history`, na mesma transação do status. |
 | Status ao vivo | O frontend escuta o stream de eventos. Se ele cair, consulta o pedido a cada 3 segundos até a conexão voltar. |
-| Testes de integração | PostgreSQL e RabbitMQ sobem em containers descartáveis. O fluxo do pedido roda neles e os containers somem no fim. |
 | Tracing | O mesmo `traceparent` atravessa a API, o outbox, o RabbitMQ e o worker. |
 | Golden tests | A resposta da API, o payload do outbox e o evento de status são comparados com JSON aprovado no repositório. |
-| React + Vite | A tela é um CRUD. Não há renderização no servidor. |
-| Docker Compose | Sobe API, worker, frontend, PostgreSQL e pgAdmin com um comando. Segredos ficam em variáveis de ambiente. |
+| Testes de integração | PostgreSQL e RabbitMQ sobem em containers descartáveis. O fluxo do pedido roda neles e os containers somem no fim. |
+| React + Vite | A tela é um CRUD, com textos em português, inglês e espanhol. Não há renderização no servidor. |
+| Docker Compose | Sobe API, worker, frontend, PostgreSQL, RabbitMQ e pgAdmin com um comando. Segredos ficam em variáveis de ambiente. |
 | pgAdmin | Administração do banco dentro do Compose. O DBeaver continua disponível na máquina local. |
-| Ollama Cloud `gpt-oss:20b` | Chat opcional. O modelo recebe pedidos, favoritos e a conversa aberta, e escreve a resposta. Não há perguntas nem frases prontas. |
+| Chat com API compatível com a OpenAI | O modelo recebe pedidos, favoritos e a conversa aberta, e escreve a resposta. Não há perguntas nem frases prontas. |
 
 ## Estrutura
 
 ```
-src/OrderManagement.Domain            Entidade, status e contrato da mensagem
-src/OrderManagement.Infrastructure    PostgreSQL e health checks
-src/OrderManagement.Api               POST /orders, GET /orders, GET /orders/{id}
-src/OrderManagement.Worker            Consome OrderCreated e atualiza o status
-frontend                              Interface React
-tests/OrderManagement.Tests           Testes da regra de status e da idempotência
+src/OrderManagement.Domain            Pedido, favorito, status e contrato das mensagens
+src/OrderManagement.Infrastructure    PostgreSQL, outbox, RabbitMQ, tracing e chat
+src/OrderManagement.Api               HTTP: pedidos, favoritos, eventos e perguntas
+src/OrderManagement.Worker            Consome OrderCreated e avança o status
+frontend                              Catálogo, pedidos, favoritos e chat
+tests/OrderManagement.Tests           Regras, outbox, contratos golden e fluxo real
 ```
 
-A API e o worker dependem de Infrastructure, que depende só de Domain. A regra de status (`Pendente` → `Processando` → `Finalizado`) fica testável sem subir o PostgreSQL.
-
-## Próximas etapas
-
-1. Endpoints `POST /orders`, `GET /orders` e `GET /orders/{id}`.
-2. RabbitMQ e worker idempotente, no mesmo Compose.
-3. Telas de listagem, criação e detalhe do pedido.
+A API e o worker dependem de Infrastructure, que depende só de Domain. A regra de status (pendente, processando, finalizado) fica testável sem subir o PostgreSQL.
