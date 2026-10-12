@@ -68,6 +68,9 @@ services:
       RabbitMQ__Host: rabbitmq
       RabbitMQ__Username: ${RABBITMQ_USER:-admin}
       RabbitMQ__Password: ${RABBITMQ_PASSWORD:-admin}
+      Llm__BaseUrl: ${LLM_BASE_URL:-https://api.openai.com/v1}
+      Llm__ApiKey: ${LLM_API_KEY:-}
+      Llm__Model: ${LLM_MODEL:-gpt-4o-mini}
     ports:
       - "127.0.0.1:${API_PORT:-8080}:8080"
     depends_on:

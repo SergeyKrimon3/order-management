@@ -41,8 +41,8 @@
     "stepPending": "Order placed",
     "stepProcessing": "Picking the product",
     "stepFinished": "Handed to the customer",
-    "themeToDark": "Use dark theme",
-    "themeToLight": "Use light theme",
+    "themeToDark": "Dark theme",
+    "themeToLight": "Light theme",
     "addToCart": "Add to bag",
     "inCart": "In the bag",
     "favoriteAdd": "Add to favorites",
@@ -75,5 +75,12 @@
     "productCoffee": "Coffee",
     "productHeadphones": "Headphones",
     "productTote": "Tote",
-    "productBookmark": "Bookmark"
+    "productBookmark": "Bookmark",
+    "askTitle": "What would you like to know?",
+    "askLabel": "Ask something about the orders",
+    "askHint": "Ask the AI",
+    "askPlaceholder": "Ask a question about the orders",
+    "askSubmit": "Ask",
+    "asking": "Thinking...",
+    "askError": "Could not answer right now."
 }

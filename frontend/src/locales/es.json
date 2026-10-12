@@ -41,8 +41,8 @@
     "stepPending": "Pedido realizado",
     "stepProcessing": "Separando el producto",
     "stepFinished": "Entregado al cliente",
-    "themeToDark": "Usar tema oscuro",
-    "themeToLight": "Usar tema claro",
+    "themeToDark": "Tema oscuro",
+    "themeToLight": "Tema claro",
     "addToCart": "Poner en la bolsa",
     "inCart": "En la bolsa",
     "favoriteAdd": "Marcar favorito",
@@ -75,5 +75,12 @@
     "productCoffee": "Café",
     "productHeadphones": "Auriculares",
     "productTote": "Bolsa",
-    "productBookmark": "Marcapáginas"
+    "productBookmark": "Marcapáginas",
+    "askTitle": "¿Qué te gustaría saber?",
+    "askLabel": "Pregunta algo sobre los pedidos",
+    "askHint": "Pregunta a la IA",
+    "askPlaceholder": "Haz una pregunta sobre los pedidos",
+    "askSubmit": "Preguntar",
+    "asking": "Pensando...",
+    "askError": "No fue posible responder ahora."
 }

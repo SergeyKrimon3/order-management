@@ -67,7 +67,14 @@ export function OrderPage({ id }: OrderPageProps) {
                     </a>
                     <nav className="nav" aria-label={t("menu")}>
                         <a href="/">{t("catalog")}</a>
-                        <a href="/?screen=orders">{t("orders")}</a>
+                        <a
+                            href="/"
+                            onClick={() => {
+                                sessionStorage.setItem("store-open-orders", "1");
+                            }}
+                        >
+                            {t("orders")}
+                        </a>
                     </nav>
                     <ThemeToggle />
                 </header>

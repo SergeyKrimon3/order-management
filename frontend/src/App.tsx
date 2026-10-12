@@ -3,6 +3,7 @@ import { addFavorite, isOrderId, listFavorites, removeFavorite } from "./api/fav
 import { listOrders } from "./api/orders";
 import { CreateOrderModal } from "./components/CreateOrderModal";
 import { OrderPage } from "./components/OrderPage";
+import { AskModal } from "./components/AskModal";
 import { OrderList } from "./components/OrderList";
 import { OrderRail } from "./components/OrderRail";
 import { ProductGrid } from "./components/ProductGrid";
@@ -52,9 +53,26 @@ export default function App() {
     return <StoreApp />;
 }
 
+const openOrdersKey = "store-open-orders";
+
 function initialScreen(): Screen {
-    const screen = new URLSearchParams(window.location.search).get("screen");
-    return screen === "orders" ? "orders" : "catalog";
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("screen")) {
+        params.delete("screen");
+        const search = params.toString();
+        window.history.replaceState(null, "", `${window.location.pathname}${search.length > 0 ? `?${search}` : ""}${window.location.hash}`);
+    }
+
+    try {
+        if (sessionStorage.getItem(openOrdersKey) === "1") {
+            sessionStorage.removeItem(openOrdersKey);
+            return "orders";
+        }
+    } catch {
+        return "catalog";
+    }
+
+    return "catalog";
 }
 
 function StoreApp() {
@@ -65,6 +83,7 @@ function StoreApp() {
     const [createOpen, setCreateOpen] = useState(false);
     const [repeatOrder, setRepeatOrder] = useState<Order | null>(null);
     const [trackedId, setTrackedId] = useState<string | null>(null);
+    const [askOpen, setAskOpen] = useState(false);
     const refreshGeneration = useRef(0);
 
     const refresh = useCallback(async () => {
@@ -199,6 +218,16 @@ function StoreApp() {
                     >
                         <Icon paths={iconPaths.heart} filled={favoriteOrders.length > 0} />
                         {favoriteOrders.length > 0 ? <span className="badge">{favoriteOrders.length}</span> : null}
+                        <span className="tip is-below" aria-hidden="true">{t("favorites")}</span>
+                    </button>
+                    <button
+                        type="button"
+                        className="icon-button"
+                        aria-label={t("askHint")}
+                        onClick={() => setAskOpen(true)}
+                    >
+                        <Icon paths={iconPaths.spark} />
+                        <span className="tip is-below" aria-hidden="true">{t("askHint")}</span>
                     </button>
                     <ThemeToggle />
                 </div>
@@ -222,6 +251,7 @@ function StoreApp() {
                     }}
                 />
             ) : null}
+            {askOpen ? <AskModal onClose={() => setAskOpen(false)} /> : null}
         </div>
     );
 }

@@ -4,6 +4,10 @@ namespace OrderManagement.Api.Contracts;
 
 public sealed record CreateOrderRequest(string Customer, string Product, decimal Amount, string? Image, Guid? RepeatOf);
 
+public sealed record AskOrderRequest(string Question, string? Locale);
+
+public sealed record AskOrderResponse(string Answer);
+
 public sealed record OrderResponse(
     Guid Id,
     string Customer,

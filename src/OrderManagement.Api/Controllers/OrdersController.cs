@@ -3,13 +3,17 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using OrderManagement.Api.Contracts;
 using OrderManagement.Api.Messaging;
+using OrderManagement.Infrastructure.Insights;
 using OrderManagement.Infrastructure.Orders;
 
 namespace OrderManagement.Api.Controllers;
 
 [ApiController]
 [Route("orders")]
-public sealed class OrdersController(OrderService orders, OrderStatusNotifier statusChanges) : ControllerBase
+public sealed class OrdersController(
+    OrderService orders,
+    OrderStatusNotifier statusChanges,
+    OrderInsightService insights) : ControllerBase
 {
     private static readonly JsonSerializerOptions EventJson = new(JsonSerializerDefaults.Web);
     [HttpGet]
@@ -17,6 +21,25 @@ public sealed class OrdersController(OrderService orders, OrderStatusNotifier st
     {
         var items = await orders.ListAsync(cancellationToken);
         return Ok(items.Select(OrderResponse.From).ToArray());
+    }
+
+    [HttpPost("ask")]
+    public async Task<ActionResult<AskOrderResponse>> Ask(AskOrderRequest request, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.Question) || request.Question.Trim().Length > 1000)
+        {
+            return BadRequest(new { message = "Question must be between 1 and 1000 characters." });
+        }
+
+        try
+        {
+            var answer = await insights.AskAsync(request.Question, request.Locale, cancellationToken);
+            return Ok(new AskOrderResponse(answer));
+        }
+        catch (OrderQuestionException exception)
+        {
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = exception.Message });
+        }
     }
 
     [HttpGet("{id:guid}")]

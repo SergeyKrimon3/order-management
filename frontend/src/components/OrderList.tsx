@@ -152,7 +152,7 @@ function ViewOrder({ id }: { id: string }) {
             onClick={(event) => event.stopPropagation()}
         >
             <Icon paths={iconPaths.eye} />
-            <span className="view-order-tip" aria-hidden="true">{t("viewOrder")}</span>
+            <span className="tip is-above" aria-hidden="true">{t("viewOrder")}</span>
         </a>
     );
 }

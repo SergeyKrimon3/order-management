@@ -74,12 +74,13 @@ export function ThemeToggle() {
             type="button"
             className={isDark ? "theme-toggle is-dark" : "theme-toggle"}
             aria-pressed={isDark}
-            aria-label={isDark ? t("themeToLight") : t("themeToDark")}
+            aria-label={isDark ? t("themeToDark") : t("themeToLight")}
             onClick={(event) => changeTheme(isDark ? "light" : "dark", event.currentTarget)}
         >
             <span className="theme-toggle-knob">
                 {isDark ? <MoonIcon /> : <SunIcon />}
             </span>
+            <span className="tip is-below" aria-hidden="true">{isDark ? t("themeToDark") : t("themeToLight")}</span>
         </button>
     );
 }

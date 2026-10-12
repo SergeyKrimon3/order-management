@@ -106,6 +106,18 @@ docker compose down
 
 O volume do banco é mantido. Para apagar os dados também: `docker compose down -v`.
 
+## Perguntas sobre os pedidos
+
+Na tela de Pedidos, o bloco **Pergunte sobre os pedidos** manda a pergunta para um modelo de linguagem, junto com os pedidos lidos do PostgreSQL e o horário de Brasília. A frase da resposta é do modelo. Sem `LLM_API_KEY`, o endpoint não responde.
+
+```env
+LLM_API_KEY=
+LLM_BASE_URL=https://api.openai.com/v1
+LLM_MODEL=gpt-4o-mini
+```
+
+Para um modelo local compatível com a API da OpenAI, aponte `LLM_BASE_URL` para ele (por exemplo `http://host.docker.internal:11434/v1`).
+
 ## Decisões técnicas
 
 | Escolha | Motivo |
@@ -116,6 +128,7 @@ O volume do banco é mantido. Para apagar os dados também: `docker compose down
 | React + Vite | A tela é um CRUD. Não há renderização no servidor. |
 | Docker Compose | Sobe API, worker, frontend, PostgreSQL e pgAdmin com um comando. Segredos ficam em variáveis de ambiente. |
 | pgAdmin | Administração do banco dentro do Compose. O DBeaver continua disponível na máquina local. |
+| LLM opcional | Recebe os pedidos reais e escreve a resposta. Não há perguntas nem frases prontas. |
 
 ## Estrutura
 
