@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using OrderManagement.Domain.Orders;
 using OrderManagement.Infrastructure.Messaging;
@@ -20,7 +21,9 @@ public sealed class OrderService(OrdersDbContext database)
             throw new ArgumentException("Order to repeat was not found.", nameof(repeatOfId));
         }
 
+        using var activity = OrderActivity.Source.StartActivity("order.create", ActivityKind.Internal);
         var order = Order.Create(customer, product, amount, image, repeatOfId);
+        activity?.SetTag("order.id", order.Id);
         database.Orders.Add(order);
         database.OrderStatusChanges.Add(OrderStatusChange.Record(order.Id, order.Status, order.CreatedAt));
         database.OutboxMessages.Add(OutboxMessage.For(OrderCreatedMessage.Create(order.Id)));

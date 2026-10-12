@@ -14,14 +14,18 @@ public sealed class RabbitMqOrderStatusChangedPublisher(
     private readonly SemaphoreSlim gate = new(1, 1);
     private IConnection? connection;
 
-    public async Task PublishAsync(OrderStatusChangedMessage message, CancellationToken cancellationToken)
+    public async Task PublishAsync(OrderStatusChangedMessage message, string? traceParent, CancellationToken cancellationToken)
     {
         var body = JsonSerializer.SerializeToUtf8Bytes(message, JsonOptions);
+        var headers = new Dictionary<string, object?>();
+        OrderActivity.ApplyHeader(headers, traceParent);
         var properties = new BasicProperties
         {
             Persistent = true,
             ContentType = "application/json",
-            Type = message.EventType
+            CorrelationId = message.OrderId.ToString(),
+            Type = message.EventType,
+            Headers = headers
         };
 
         await gate.WaitAsync(cancellationToken);

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using OrderManagement.Domain.Orders;
@@ -14,7 +15,15 @@ public sealed class OrderFlowTests(RealDependenciesFixture dependencies)
     {
         await using var scope = dependencies.Services.CreateAsyncScope();
         var orders = scope.ServiceProvider.GetRequiredService<OrderService>();
-        var created = await orders.CreateAsync("Ada Lovelace", "Teclado", 150.5m, null, null, CancellationToken.None);
+        Order created;
+        string traceId;
+        using (var activity = new Activity("order.request"))
+        {
+            activity.SetIdFormat(ActivityIdFormat.W3C);
+            activity.Start();
+            created = await orders.CreateAsync("Ada Lovelace", "Teclado", 150.5m, null, null, CancellationToken.None);
+            traceId = activity.TraceId.ToString();
+        }
 
         var deadline = DateTime.UtcNow.AddSeconds(40);
         while (DateTime.UtcNow < deadline)
@@ -46,6 +55,11 @@ public sealed class OrderFlowTests(RealDependenciesFixture dependencies)
                 Assert.Equal(
                     [OrderCreatedMessage.EventName, OrderStatusChangedMessage.EventName, OrderStatusChangedMessage.EventName],
                     outbox.Select(message => message.EventType).ToArray());
+                Assert.All(outbox, message =>
+                {
+                    Assert.NotNull(message.TraceParent);
+                    Assert.Contains(traceId, message.TraceParent, StringComparison.OrdinalIgnoreCase);
+                });
                 return;
             }
 

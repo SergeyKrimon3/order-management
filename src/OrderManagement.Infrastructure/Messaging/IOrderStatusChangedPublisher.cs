@@ -4,5 +4,5 @@ namespace OrderManagement.Infrastructure.Messaging;
 
 public interface IOrderStatusChangedPublisher
 {
-    Task PublishAsync(OrderStatusChangedMessage message, CancellationToken cancellationToken);
+    Task PublishAsync(OrderStatusChangedMessage message, string? traceParent, CancellationToken cancellationToken);
 }

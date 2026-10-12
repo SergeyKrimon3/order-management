@@ -1,4 +1,5 @@
 using System.Data;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
@@ -88,7 +89,7 @@ public sealed class OutboxRelay(
                 throw new InvalidOperationException("Outbox order message is unreadable.");
             }
 
-            await created.PublishAsync(body, cancellationToken);
+            await PublishOnTraceAsync(message.TraceParent, body.OrderId, traceParent => created.PublishAsync(body, traceParent, cancellationToken));
             return;
         }
 
@@ -100,7 +101,7 @@ public sealed class OutboxRelay(
                 throw new InvalidOperationException("Outbox status message is unreadable.");
             }
 
-            await statusChanged.PublishAsync(body, cancellationToken);
+            await PublishOnTraceAsync(message.TraceParent, body.OrderId, traceParent => statusChanged.PublishAsync(body, traceParent, cancellationToken));
             return;
         }
 
@@ -124,7 +125,7 @@ public sealed class OutboxRelay(
         command.Transaction = database.Database.CurrentTransaction?.GetDbTransaction();
         command.CommandText =
             """
-            SELECT id, event_type, payload
+            SELECT id, event_type, payload, traceparent
             FROM outbox_messages
             WHERE published_at IS NULL
             ORDER BY created_at
@@ -136,11 +137,21 @@ public sealed class OutboxRelay(
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         while (await reader.ReadAsync(cancellationToken))
         {
-            pending.Add(new PendingOutbox(reader.GetGuid(0), reader.GetString(1), reader.GetString(2)));
+            var traceParent = reader.IsDBNull(3) ? null : reader.GetString(3);
+            pending.Add(new PendingOutbox(reader.GetGuid(0), reader.GetString(1), reader.GetString(2), traceParent));
         }
 
         return pending;
     }
 
-    private sealed record PendingOutbox(Guid Id, string EventType, string Payload);
+    private async Task PublishOnTraceAsync(string? traceParent, Guid orderId, Func<string?, Task> publish)
+    {
+        using var activity = OrderActivity.Start("outbox.publish", traceParent, ActivityKind.Producer);
+        activity?.SetTag("order.id", orderId);
+        var next = OrderActivity.CurrentTraceParent() ?? traceParent;
+        logger.LogInformation("Publishing order {OrderId} on trace {TraceId}.", orderId, activity?.TraceId);
+        await publish(next);
+    }
+
+    private sealed record PendingOutbox(Guid Id, string EventType, string Payload, string? TraceParent);
 }

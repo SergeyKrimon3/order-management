@@ -187,6 +187,12 @@ Os testes de integração sobem um PostgreSQL 17 e um RabbitMQ 4 só para aquela
 
 O que a suíte confere: a linha em `orders`, as três mensagens em `outbox_messages` com `published_at` preenchido, e o histórico pendente, processando e finalizado.
 
+## Tracing ponta a ponta
+
+Criar um pedido abre um trace no padrão W3C. O `traceparent` fica na linha do outbox e vai no cabeçalho da mensagem do RabbitMQ. O worker continua o mesmo trace ao processar o pedido, e a API continua de novo quando o status volta. API e worker escrevem o `TraceId` no log. O exportador de console do OpenTelemetry imprime cada span.
+
+O health check não entra nesse trace.
+
 ## Decisões técnicas
 
 | Escolha | Motivo |
@@ -198,6 +204,7 @@ O que a suíte confere: a linha em `orders`, as três mensagens em `outbox_messa
 | Histórico de status | Cada transição fica em `order_status_history`, na mesma transação do status. |
 | Status ao vivo | O frontend escuta o stream de eventos. Se ele cair, consulta o pedido a cada 3 segundos até a conexão voltar. |
 | Testes de integração | PostgreSQL e RabbitMQ sobem em containers descartáveis. O fluxo do pedido roda neles e os containers somem no fim. |
+| Tracing | O mesmo `traceparent` atravessa a API, o outbox, o RabbitMQ e o worker. |
 | React + Vite | A tela é um CRUD. Não há renderização no servidor. |
 | Docker Compose | Sobe API, worker, frontend, PostgreSQL e pgAdmin com um comando. Segredos ficam em variáveis de ambiente. |
 | pgAdmin | Administração do banco dentro do Compose. O DBeaver continua disponível na máquina local. |

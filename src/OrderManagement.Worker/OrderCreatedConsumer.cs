@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using OrderManagement.Domain.Orders;
 using OrderManagement.Infrastructure.Messaging;
@@ -70,14 +71,19 @@ public sealed class OrderCreatedConsumer(
                 return;
             }
 
+            var traceParent = OrderActivity.ReadHeader(delivery.BasicProperties.Headers);
+            using var activity = OrderActivity.Start("order.process", traceParent, ActivityKind.Consumer);
+            activity?.SetTag("order.id", message.OrderId);
+            logger.LogInformation("Processing order {OrderId} on trace {TraceId}.", message.OrderId, activity?.TraceId);
             await using var scope = scopes.CreateAsyncScope();
             var processor = scope.ServiceProvider.GetRequiredService<OrderCreatedProcessor>();
             await processor.ProcessAsync(message.OrderId, stoppingToken);
             logger.LogInformation(
-                "Finished {EventType} for order {OrderId} with correlation {CorrelationId}.",
+                "Finished {EventType} for order {OrderId} with correlation {CorrelationId} on trace {TraceId}.",
                 message.EventType,
                 message.OrderId,
-                message.CorrelationId);
+                message.CorrelationId,
+                activity?.TraceId);
             await SettleAsync(channel, gate, tag, ack: true, requeue: false);
         }
         catch (JsonException exception)

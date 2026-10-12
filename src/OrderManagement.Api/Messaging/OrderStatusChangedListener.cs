@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using OrderManagement.Domain.Orders;
 using OrderManagement.Infrastructure.Messaging;
@@ -53,6 +54,14 @@ public sealed class OrderStatusChangedListener(
                     return;
                 }
 
+                var traceParent = OrderActivity.ReadHeader(delivery.BasicProperties.Headers);
+                using var activity = OrderActivity.Start("order.status", traceParent, ActivityKind.Consumer);
+                activity?.SetTag("order.id", message.OrderId);
+                logger.LogInformation(
+                    "Received status {Status} for order {OrderId} on trace {TraceId}.",
+                    message.Status,
+                    message.OrderId,
+                    activity?.TraceId);
                 notifier.Publish(message);
                 await channel.BasicAckAsync(delivery.DeliveryTag, multiple: false);
             }

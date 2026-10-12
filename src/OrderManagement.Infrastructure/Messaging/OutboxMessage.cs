@@ -15,6 +15,8 @@ public sealed class OutboxMessage
 
     public Guid CorrelationId { get; private set; }
 
+    public string? TraceParent { get; private set; }
+
     public DateTime CreatedAt { get; private set; }
 
     public DateTime? PublishedAt { get; private set; }
@@ -41,6 +43,7 @@ public sealed class OutboxMessage
             EventType = eventType,
             Payload = JsonSerializer.Serialize(message, Json),
             CorrelationId = correlationId,
+            TraceParent = OrderActivity.CurrentTraceParent(),
             CreatedAt = BrazilTime.Now()
         };
     }

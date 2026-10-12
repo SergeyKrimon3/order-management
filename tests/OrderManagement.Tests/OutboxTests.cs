@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -33,6 +34,22 @@ public class OutboxTests
         var history = await database.OrderStatusChanges.SingleAsync(change => change.OrderId == order.Id);
         Assert.Equal(OrderStatus.Pending, history.Status);
         Assert.Equal(order.CreatedAt, history.OccurredAt);
+    }
+
+    [Fact]
+    public async Task Create_StoresTheAmbientTrace()
+    {
+        await using var database = await CreateDatabaseAsync();
+        var service = new OrderService(database);
+        using var activity = new Activity("order.request");
+        activity.SetIdFormat(ActivityIdFormat.W3C);
+        activity.Start();
+
+        var order = await service.CreateAsync("Ada Lovelace", "Teclado", 150.5m, null, null, CancellationToken.None);
+
+        var message = await database.OutboxMessages.SingleAsync(item => item.CorrelationId == order.Id);
+        Assert.NotNull(message.TraceParent);
+        Assert.Contains(activity.TraceId.ToString(), message.TraceParent, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

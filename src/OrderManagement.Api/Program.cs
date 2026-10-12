@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using OrderManagement.Api.Messaging;
 using OrderManagement.Infrastructure;
+using OrderManagement.Infrastructure.Messaging;
 using OrderManagement.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,6 +17,7 @@ builder.Services.AddControllers()
     });
 builder.Services.AddOpenApi();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddOrderTracing(includeHttpRequests: true);
 builder.Services.AddSingleton<OrderStatusNotifier>();
 builder.Services.AddHostedService<OrderStatusChangedListener>();
 

@@ -209,30 +209,42 @@ namespace OrderManagement.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasColumnOrder(0);
 
                     b.Property<Guid>("CorrelationId")
                         .HasColumnType("uuid")
-                        .HasColumnName("correlation_id");
+                        .HasColumnName("correlation_id")
+                        .HasColumnOrder(3);
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp without time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasColumnOrder(5);
 
                     b.Property<string>("EventType")
                         .IsRequired()
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)")
-                        .HasColumnName("event_type");
+                        .HasColumnName("event_type")
+                        .HasColumnOrder(1);
 
                     b.Property<string>("Payload")
                         .IsRequired()
                         .HasColumnType("text")
-                        .HasColumnName("payload");
+                        .HasColumnName("payload")
+                        .HasColumnOrder(2);
 
                     b.Property<DateTime?>("PublishedAt")
                         .HasColumnType("timestamp without time zone")
-                        .HasColumnName("published_at");
+                        .HasColumnName("published_at")
+                        .HasColumnOrder(6);
+
+                    b.Property<string>("TraceParent")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("traceparent")
+                        .HasColumnOrder(4);
 
                     b.HasKey("Id");
 
