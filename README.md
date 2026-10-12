@@ -224,6 +224,47 @@ A suíte tem três grupos:
 - **Golden tests**, em `tests/OrderManagement.Tests/Golden`. O teste serializa o detalhe do pedido, a listagem, o payload do outbox e o evento de status, e compara o texto com esses arquivos. Uma mudança de campo, nome ou formato quebra a suíte até o arquivo ser atualizado de propósito.
 - **Fluxo real**. O teste sobe um PostgreSQL 17 e um RabbitMQ 4 só para aquela execução, com Testcontainers. Aplica as migrations nesse banco, cria um pedido e espera o relay publicar na fila real e o consumidor finalizar o pedido. No fim, os dois containers são apagados. O banco `tmb-local` e a fila do Compose não entram nesse teste. Ele confere a linha em `orders`, as três mensagens em `outbox_messages` com `published_at` preenchido, o histórico pendente, processando e finalizado, e o mesmo `traceparent` nas três mensagens.
 
+## Arquitetura
+
+A tela fala só com a API. A API e o worker compartilham o PostgreSQL. O RabbitMQ leva a criação do pedido até o worker e devolve a mudança de status até a API.
+
+```mermaid
+flowchart LR
+    tela[Frontend]
+    api[API]
+    worker[Worker]
+    banco[(PostgreSQL)]
+    fila[RabbitMQ]
+
+    tela -->|HTTP e stream| api
+    api --> banco
+    api --> fila
+    worker --> banco
+    worker --> fila
+    fila --> worker
+    fila --> api
+```
+
+Criar um pedido grava a linha e a mensagem na mesma transação. O relay publica depois. O worker avança o status e a tela recebe o evento.
+
+```mermaid
+sequenceDiagram
+    participant Tela
+    participant API
+    participant Banco
+    participant Fila
+    participant Worker
+
+    Tela->>API: POST /orders
+    API->>Banco: pedido, histórico e outbox na mesma transação
+    API->>Fila: relay publica OrderCreated
+    Fila->>Worker: consome e avança o status
+    Worker->>Banco: status, histórico e outbox
+    Worker->>Fila: relay publica OrderStatusChanged
+    Fila->>API: escuta o status
+    API->>Tela: evento no stream
+```
+
 ## Decisões técnicas
 
 | Escolha | Motivo |
