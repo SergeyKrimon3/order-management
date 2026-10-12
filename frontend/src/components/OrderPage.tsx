@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { getOrder, OrderRequestError } from "../api/orders";
 import { formatAmount, formatDayAndTime, formatDayAndTimeWithSeconds, statusLabel, stepCaption } from "../format";
 import { t, type MessageKey } from "../i18n";
+import { watchOrderEvents } from "../orderEvents";
 import type { Order } from "../types/order";
 import { ThemeToggle } from "./ThemeToggle";
 import { WorkerDots } from "./WorkerDots";
@@ -46,14 +47,13 @@ export function OrderPage({ id }: OrderPageProps) {
         }
 
         void load();
-        const source = new EventSource("/api/orders/events");
-        source.onmessage = () => {
+        const stopEvents = watchOrderEvents(() => {
             void load();
-        };
+        });
 
         return () => {
             cancelled = true;
-            source.close();
+            stopEvents();
         };
     }, [id]);
 

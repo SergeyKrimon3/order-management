@@ -11,6 +11,7 @@ import { StoreHeader, type Screen } from "./components/StoreHeader";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { Icon, iconPaths } from "./components/Icon";
 import { t, type MessageKey } from "./i18n";
+import { watchOrderEvents } from "./orderEvents";
 import type { Order } from "./types/order";
 
 const favoritesKey = "favorites";
@@ -113,12 +114,10 @@ function StoreApp() {
     }, []);
 
     useEffect(() => {
-        const source = new EventSource("/api/orders/events");
-        source.onmessage = () => {
-            void refresh();
-        };
         void refresh();
-        return () => source.close();
+        return watchOrderEvents(() => {
+            void refresh();
+        });
     }, [refresh]);
 
     useEffect(() => {
