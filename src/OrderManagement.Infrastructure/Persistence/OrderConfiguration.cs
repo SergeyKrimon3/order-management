@@ -43,6 +43,13 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
             .HasMaxLength(20)
             .IsRequired();
 
+        builder.Property(order => order.Image)
+            .HasColumnName("image")
+            .HasColumnType("text");
+
+        builder.Property(order => order.RepeatOfId)
+            .HasColumnName("repeat_of_id");
+
         builder.Property(order => order.CreatedAt)
             .HasColumnName("created_at")
             .HasColumnType("timestamp without time zone")
@@ -52,10 +59,6 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
             .HasColumnName("updated_at")
             .HasColumnType("timestamp without time zone")
             .IsRequired();
-
-        builder.Property(order => order.Image)
-            .HasColumnName("image")
-            .HasColumnType("text");
 
         var createdAt = new DateTime(2026, 10, 11, 20, 4, 41, DateTimeKind.Unspecified);
         builder.HasData(
@@ -78,7 +81,8 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
             Status = OrderStatus.Completed,
             CreatedAt = createdAt,
             UpdatedAt = createdAt,
-            Image = image
+            Image = image,
+            RepeatOfId = (Guid?)null
         };
     }
 }

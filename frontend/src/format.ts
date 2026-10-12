@@ -7,8 +7,18 @@ const statusKey: Record<OrderStatus, MessageKey> = {
     completed: "completed",
 };
 
+const stepCaptionKey: Record<OrderStatus, MessageKey> = {
+    pending: "stepPending",
+    processing: "stepProcessing",
+    completed: "stepFinished",
+};
+
 export function statusLabel(status: OrderStatus): string {
     return t(statusKey[status]);
+}
+
+export function stepCaption(status: OrderStatus): string {
+    return t(stepCaptionKey[status]);
 }
 
 export function formatAmount(amount: number): string {
@@ -24,6 +34,27 @@ export function formatDate(value: string): string {
         timeStyle: "short",
         timeZone: "America/Sao_Paulo",
     }).format(new Date(value));
+}
+
+export function formatDay(value: string): string {
+    return new Intl.DateTimeFormat("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        timeZone: "America/Sao_Paulo",
+    }).format(new Date(value));
+}
+
+export function formatTime(value: string): string {
+    return new Intl.DateTimeFormat("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "America/Sao_Paulo",
+    }).format(new Date(value));
+}
+
+export function formatDayAndTime(value: string): string {
+    return `${formatDay(value)} - ${formatTime(value)}`;
 }
 
 export function parseAmount(value: string): number | null {

@@ -22,6 +22,31 @@ namespace OrderManagement.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("OrderManagement.Domain.Favorites.Favorite", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("order_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId")
+                        .IsUnique();
+
+                    b.ToTable("favorites", (string)null);
+                });
+
             modelBuilder.Entity("OrderManagement.Domain.Orders.Order", b =>
                 {
                     b.Property<Guid>("Id")
@@ -53,6 +78,10 @@ namespace OrderManagement.Infrastructure.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("product");
+
+                    b.Property<Guid?>("RepeatOfId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("repeat_of_id");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -140,6 +169,15 @@ namespace OrderManagement.Infrastructure.Persistence.Migrations
                             Status = "completed",
                             UpdatedAt = new DateTime(2026, 10, 11, 20, 4, 41, 0, DateTimeKind.Unspecified)
                         });
+                });
+
+            modelBuilder.Entity("OrderManagement.Domain.Favorites.Favorite", b =>
+                {
+                    b.HasOne("OrderManagement.Domain.Orders.Order", null)
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

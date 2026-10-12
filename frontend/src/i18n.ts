@@ -26,3 +26,16 @@ function catalog(): Record<MessageKey, string> {
 export function t(key: MessageKey): string {
     return catalog()[key];
 }
+
+export function locale(): "pt-BR" | "en" | "es" {
+    const language = navigator.language.toLowerCase();
+    if (language.startsWith("pt")) {
+        return "pt-BR";
+    }
+
+    if (language.startsWith("es")) {
+        return "es";
+    }
+
+    return "en";
+}

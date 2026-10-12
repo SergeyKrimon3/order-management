@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { addFavorite, isOrderId, listFavorites, removeFavorite } from "./api/favorites";
 import { listOrders } from "./api/orders";
-import { findProduct } from "./catalog";
-import { CartPanel } from "./components/CartPanel";
 import { CreateOrderModal } from "./components/CreateOrderModal";
-import { OrderDetail } from "./components/OrderDetail";
+import { OrderPage } from "./components/OrderPage";
+import { AskModal } from "./components/AskModal";
 import { OrderList } from "./components/OrderList";
 import { OrderRail } from "./components/OrderRail";
 import { ProductGrid } from "./components/ProductGrid";
@@ -14,12 +14,15 @@ import { t, type MessageKey } from "./i18n";
 import type { Order } from "./types/order";
 
 const favoritesKey = "favorites";
-const cartKey = "cart";
+const orderPath = /^\/orders\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/?$/i;
+
+function orderPageId(): string | null {
+    return orderPath.exec(window.location.pathname)?.[1] ?? null;
+}
 
 const screenTitle: Record<Screen, MessageKey> = {
     catalog: "catalog",
     favorites: "favorites",
-    cart: "cart",
     orders: "orders",
 };
 
@@ -41,27 +44,63 @@ function readFavorites(): string[] {
     }
 }
 
-function readCart(): string | null {
-    const stored = localStorage.getItem(cartKey);
-    return stored && findProduct(stored) ? stored : null;
+export default function App() {
+    const pageId = orderPageId();
+    if (pageId !== null) {
+        return <OrderPage id={pageId} />;
+    }
+
+    return <StoreApp />;
 }
 
-export default function App() {
-    const [screen, setScreen] = useState<Screen>("catalog");
-    const [favoriteIds, setFavoriteIds] = useState<string[]>(readFavorites);
-    const [cartId, setCartId] = useState<string | null>(readCart);
+const openOrdersKey = "store-open-orders";
+
+function initialScreen(): Screen {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("screen")) {
+        params.delete("screen");
+        const search = params.toString();
+        window.history.replaceState(null, "", `${window.location.pathname}${search.length > 0 ? `?${search}` : ""}${window.location.hash}`);
+    }
+
+    try {
+        if (sessionStorage.getItem(openOrdersKey) === "1") {
+            sessionStorage.removeItem(openOrdersKey);
+            return "orders";
+        }
+    } catch {
+        return "catalog";
+    }
+
+    return "catalog";
+}
+
+function StoreApp() {
+    const [screen, setScreen] = useState<Screen>(initialScreen);
+    const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
-    const [selectedId, setSelectedId] = useState<string | null>(null);
     const [loadError, setLoadError] = useState("");
     const [createOpen, setCreateOpen] = useState(false);
+    const [repeatOrder, setRepeatOrder] = useState<Order | null>(null);
+    const [trackedId, setTrackedId] = useState<string | null>(null);
+    const [askOpen, setAskOpen] = useState(false);
+    const refreshGeneration = useRef(0);
 
     const refresh = useCallback(async () => {
+        const generation = refreshGeneration.current + 1;
+        refreshGeneration.current = generation;
         try {
             const items = await listOrders();
+            if (generation !== refreshGeneration.current) {
+                return;
+            }
+
             setOrders(items);
             setLoadError("");
         } catch {
-            setLoadError(t("loadError"));
+            if (generation === refreshGeneration.current) {
+                setLoadError(t("loadError"));
+            }
         }
     }, []);
 
@@ -74,40 +113,68 @@ export default function App() {
     }, []);
 
     useEffect(() => {
-        void refresh();
-        const timer = window.setInterval(() => {
+        const source = new EventSource("/api/orders/events");
+        source.onmessage = () => {
             void refresh();
-        }, 1000);
-        return () => window.clearInterval(timer);
+        };
+        void refresh();
+        return () => source.close();
     }, [refresh]);
 
     useEffect(() => {
-        localStorage.setItem(favoritesKey, JSON.stringify(favoriteIds));
-    }, [favoriteIds]);
+        let cancelled = false;
 
-    useEffect(() => {
-        if (cartId) {
-            localStorage.setItem(cartKey, cartId);
-            return;
+        async function loadFavorites() {
+            const stored = readFavorites().filter(isOrderId);
+            try {
+                for (const id of stored) {
+                    try {
+                        await addFavorite(id);
+                    } catch {
+                        continue;
+                    }
+                }
+
+                const items = await listFavorites();
+                localStorage.removeItem(favoritesKey);
+                localStorage.removeItem("cart");
+                if (!cancelled) {
+                    setFavoriteIds(items.map((item) => item.orderId));
+                }
+            } catch {
+                if (!cancelled) {
+                    setFavoriteIds(stored);
+                }
+            }
         }
 
-        localStorage.removeItem(cartKey);
-    }, [cartId]);
+        void loadFavorites();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     function toggleFavorite(id: string) {
+        const exists = favoriteIds.includes(id);
         setFavoriteIds((current) =>
-            current.includes(id) ? current.filter((item) => item !== id) : [...current, id],
+            exists ? current.filter((item) => item !== id) : [...current, id],
         );
+
+        const request = exists ? removeFavorite(id) : addFavorite(id);
+        void request.catch(() => {
+            setFavoriteIds((current) =>
+                exists ? [...current, id] : current.filter((item) => item !== id),
+            );
+        });
     }
 
-    const selected = orders.find((order) => order.id === selectedId) ?? null;
     const completedOrders = orders.filter((order) => order.status === "completed");
-    const favoriteOrders = completedOrders.filter((order) => favoriteIds.includes(order.id));
-    const visibleOrders = screen === "favorites" ? favoriteOrders : completedOrders;
+    const catalogOrders = completedOrders.filter((order) => order.repeatOf === null);
+    const favoriteOrders = catalogOrders.filter((order) => favoriteIds.includes(order.id));
+    const visibleOrders = screen === "favorites" ? favoriteOrders : catalogOrders;
 
     function openOrder(id: string) {
-        setSelectedId(id);
-        setScreen("orders");
+        window.location.assign(`/orders/${id}`);
     }
 
     return (
@@ -118,23 +185,26 @@ export default function App() {
                     <section className="orders-board">
                         <h1>{t("orders")}</h1>
                         {loadError ? <p className="field-error">{loadError}</p> : null}
-                        <OrderList orders={orders} selectedId={selectedId} onSelect={setSelectedId} />
-                        {selected ? (
-                            <OrderDetail order={selected} onClose={() => setSelectedId(null)} />
-                        ) : null}
+                        <OrderList orders={orders} onSelect={openOrder} />
                     </section>
                 ) : (
                     <ProductGrid
                         orders={visibleOrders}
                         favoriteIds={favoriteIds}
-                        cartId={cartId}
                         onToggleFavorite={toggleFavorite}
-                        onAddToCart={(id) => {
-                            setCartId(id);
-                            setScreen("catalog");
-                        }}
                         onOpen={openOrder}
-                        onCreateOrder={screen === "catalog" ? () => setCreateOpen(true) : undefined}
+                        onReorder={(order) => {
+                            if (createOpen) {
+                                return;
+                            }
+
+                            setRepeatOrder(order);
+                            setCreateOpen(true);
+                        }}
+                        onCreateOrder={screen === "catalog" ? () => {
+                            setRepeatOrder(null);
+                            setCreateOpen(true);
+                        } : undefined}
                     />
                 )}
             </div>
@@ -148,55 +218,42 @@ export default function App() {
                     >
                         <Icon paths={iconPaths.heart} filled={favoriteOrders.length > 0} />
                         {favoriteOrders.length > 0 ? <span className="badge">{favoriteOrders.length}</span> : null}
+                        <span className="tip is-below" aria-hidden="true">{t("favorites")}</span>
                     </button>
                     <button
                         type="button"
-                        className={screen === "cart" ? "icon-button active" : "icon-button"}
-                        aria-label={t("cart")}
-                        onClick={() => setScreen(screen === "cart" ? "catalog" : "cart")}
+                        className="icon-button"
+                        aria-label={t("askHint")}
+                        onClick={() => setAskOpen(true)}
                     >
-                        <Icon paths={iconPaths.cart} />
-                        {cartId ? <span className="badge">1</span> : null}
+                        <Icon paths={iconPaths.spark} />
+                        <span className="tip is-below" aria-hidden="true">{t("askHint")}</span>
                     </button>
                     <ThemeToggle />
                 </div>
-                {screen === "cart" ? (
-                    <CartPanel
-                        product={cartId ? findProduct(cartId) : null}
-                        onBrowse={() => setScreen("catalog")}
-                        onCreated={(order) => {
-                            setCartId(null);
-                            setSelectedId(order.id);
-                            setScreen("orders");
-                            void refresh();
-                        }}
-                    />
-                ) : (
-                    <>
-                        <h2>{t("ordersNow")}</h2>
-                        {loadError ? <p className="field-error">{loadError}</p> : null}
-                        <OrderRail
-                            orders={orders}
-                            selectedId={selectedId}
-                            onSelect={(id) => {
-                                setSelectedId(id);
-                                setScreen("orders");
-                            }}
-                        />
-                    </>
-                )}
+                <h2>{t("ordersNow")}</h2>
+                <div className="rail-scroll">
+                    {loadError ? <p className="field-error">{loadError}</p> : null}
+                    <OrderRail orders={orders} onSelect={openOrder} />
+                </div>
             </aside>
             {createOpen ? (
                 <CreateOrderModal
-                    onClose={() => setCreateOpen(false)}
-                    onCreated={(order) => {
+                    liveOrder={orders.find((order) => order.id === trackedId) ?? null}
+                    repeatOrder={repeatOrder}
+                    onClose={() => {
                         setCreateOpen(false);
-                        setSelectedId(order.id);
-                        setScreen("orders");
+                        setRepeatOrder(null);
+                        setTrackedId(null);
+                    }}
+                    onCreated={(order) => {
+                        setTrackedId(order.id);
+                        setOrders((current) => [order, ...current.filter((item) => item.id !== order.id)]);
                         void refresh();
                     }}
                 />
             ) : null}
+            {askOpen ? <AskModal onClose={() => setAskOpen(false)} /> : null}
         </div>
     );
 }

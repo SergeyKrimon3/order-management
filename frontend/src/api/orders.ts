@@ -23,7 +23,8 @@ function isOrder(value: unknown): value is Order {
         isOrderStatus(value.status) &&
         typeof value.createdAt === "string" &&
         typeof value.updatedAt === "string" &&
-        (value.image === null || typeof value.image === "string")
+        (value.image === null || typeof value.image === "string") &&
+        (value.repeatOf === null || typeof value.repeatOf === "string")
     );
 }
 
@@ -45,6 +46,29 @@ export async function listOrders(): Promise<Order[]> {
     const body: unknown = await response.json();
     if (!Array.isArray(body) || !body.every(isOrder)) {
         throw new Error("Invalid order list.");
+    }
+
+    return body;
+}
+
+export class OrderRequestError extends Error {
+    readonly status: number;
+
+    constructor(status: number, message: string) {
+        super(message);
+        this.status = status;
+    }
+}
+
+export async function getOrder(id: string): Promise<Order> {
+    const response = await fetch(`/api/orders/${encodeURIComponent(id)}`);
+    if (!response.ok) {
+        throw new OrderRequestError(response.status, await readError(response));
+    }
+
+    const body: unknown = await response.json();
+    if (!isOrder(body)) {
+        throw new OrderRequestError(response.status, "Invalid order.");
     }
 
     return body;

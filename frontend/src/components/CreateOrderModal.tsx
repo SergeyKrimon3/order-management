@@ -1,13 +1,33 @@
 import { useEffect, useId, useRef, useState, type ClipboardEvent as ReactClipboardEvent, type DragEvent, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { createOrder } from "../api/orders";
 import { Icon, iconPaths } from "./Icon";
+import { WorkerDots } from "./WorkerDots";
+import { formatAmount, formatDay, stepCaption } from "../format";
 import { t } from "../i18n";
 import { imageFileToDataUrl } from "../orderImages";
-import type { Order } from "../types/order";
+import type { Order, OrderStatus } from "../types/order";
 
 interface CreateOrderModalProps {
+    liveOrder: Order | null;
+    repeatOrder?: Order | null;
     onClose: () => void;
     onCreated: (order: Order) => void;
+}
+
+const progressSteps: readonly OrderStatus[] = ["pending", "processing", "completed"];
+
+function stepState(status: OrderStatus, step: OrderStatus): "done" | "current" | "waiting" {
+    const current = progressSteps.indexOf(status);
+    const index = progressSteps.indexOf(step);
+    if (status === "completed" || index < current) {
+        return "done";
+    }
+
+    if (index === current) {
+        return "current";
+    }
+
+    return "waiting";
 }
 
 function centsDigits(value: string): string {
@@ -61,13 +81,38 @@ function imageFromClipboard(data: DataTransfer): File | null {
     return null;
 }
 
-export function CreateOrderModal({ onClose, onCreated }: CreateOrderModalProps) {
+const repeatRequests = new Map<string, Promise<Order>>();
+
+function requestRepeat(source: Order): Promise<Order> {
+    const current = repeatRequests.get(source.id);
+    if (current) {
+        return current;
+    }
+
+    const request = createOrder({
+        customer: source.customer,
+        product: source.product,
+        amount: source.amount,
+        image: source.image,
+        repeatOf: source.id,
+    }).finally(() => {
+        repeatRequests.delete(source.id);
+    });
+
+    repeatRequests.set(source.id, request);
+    return request;
+}
+
+export function CreateOrderModal({ liveOrder, repeatOrder = null, onClose, onCreated }: CreateOrderModalProps) {
     const titleId = useId();
     const customerRef = useRef<HTMLInputElement>(null);
     const imageZoneRef = useRef<HTMLLabelElement>(null);
     const assignFileRef = useRef<(next: File | undefined) => void>(() => undefined);
     const alive = useRef(true);
     const onCloseRef = useRef(onClose);
+    const onCreatedRef = useRef(onCreated);
+    const allowCloseRef = useRef(true);
+    const countdownStarted = useRef(false);
     const previewUrl = useRef<string | null>(null);
     const [customer, setCustomer] = useState("");
     const [product, setProduct] = useState("");
@@ -76,13 +121,77 @@ export function CreateOrderModal({ onClose, onCreated }: CreateOrderModalProps) 
     const [preview, setPreview] = useState<string | null>(null);
     const [error, setError] = useState("");
     const [saving, setSaving] = useState(false);
+    const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
+    const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
     const customerMissing = customer.trim().length === 0;
     const productMissing = product.trim().length === 0;
     const amountMissing = amountDigits.length === 0;
     const imageMissing = file === null;
+    const progress = liveOrder && createdOrder && liveOrder.id === createdOrder.id ? liveOrder : createdOrder;
+    const progressId = progress?.id;
+    const progressStatus = progress?.status;
+    const allowClose = progressStatus !== "pending" && progressStatus !== "processing";
+    allowCloseRef.current = allowClose;
+
+    useEffect(() => {
+        if (progressStatus !== "completed" || !progressId || countdownStarted.current) {
+            return;
+        }
+
+        countdownStarted.current = true;
+        setSecondsLeft(10);
+        const timer = window.setInterval(() => {
+            setSecondsLeft((current) => {
+                if (current === null || current <= 1) {
+                    window.clearInterval(timer);
+                    onCloseRef.current();
+                    return 1;
+                }
+
+                return current - 1;
+            });
+        }, 1000);
+
+        return () => window.clearInterval(timer);
+    }, [progressId, progressStatus]);
+
+    useEffect(() => {
+        if (!repeatOrder) {
+            return;
+        }
+
+        let cancelled = false;
+        setSaving(true);
+        setError("");
+
+        void requestRepeat(repeatOrder)
+            .then((order) => {
+                if (cancelled) {
+                    return;
+                }
+
+                setCreatedOrder(order);
+                onCreatedRef.current(order);
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setError(t("saveError"));
+                }
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setSaving(false);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [repeatOrder]);
 
     useEffect(() => {
         onCloseRef.current = onClose;
+        onCreatedRef.current = onCreated;
         assignFileRef.current = assignFile;
     });
 
@@ -95,7 +204,9 @@ export function CreateOrderModal({ onClose, onCreated }: CreateOrderModalProps) 
 
         function onKey(event: KeyboardEvent) {
             if (event.key === "Escape") {
-                onCloseRef.current();
+                if (allowCloseRef.current) {
+                    onCloseRef.current();
+                }
                 return;
             }
 
@@ -242,6 +353,9 @@ export function CreateOrderModal({ onClose, onCreated }: CreateOrderModalProps) 
                 amount: parsedAmount,
                 image: dataUrl,
             });
+            if (alive.current) {
+                setCreatedOrder(order);
+            }
             onCreated(order);
         } catch {
             if (alive.current) {
@@ -254,22 +368,82 @@ export function CreateOrderModal({ onClose, onCreated }: CreateOrderModalProps) 
         }
     }
 
+    const currentIndex = progress ? progressSteps.indexOf(progress.status) : -1;
+    const following = progress !== null || repeatOrder !== null;
+
     return (
         <div className="modal-backdrop">
             <form
-                className="panel form modal"
+                className={following ? "panel form modal modal-progress" : "panel form modal"}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby={titleId}
                 onClick={(event) => event.stopPropagation()}
-                onSubmit={handleSubmit}
+                onSubmit={progress ? (event) => event.preventDefault() : handleSubmit}
             >
                 <div className="modal-head">
-                    <h2 id={titleId}>{t("createOrder")}</h2>
-                    <button type="button" className="icon-button modal-close" onClick={onClose} aria-label={t("close")}>
-                        <Icon paths={iconPaths.closeCircle} />
-                    </button>
+                    <h2 id={titleId}>{following ? t("orderProgress") : t("createOrder")}</h2>
+                    {allowClose ? (
+                        <button type="button" className="icon-button modal-close" onClick={onClose} aria-label={t("close")}>
+                            <Icon paths={iconPaths.closeCircle} />
+                        </button>
+                    ) : null}
                 </div>
+                {progress ? (
+                    <>
+                        <ol className="h-stepper">
+                            {progressSteps.map((step, index) => {
+                                const state = stepState(progress.status, step);
+                                return (
+                                    <li
+                                        key={step}
+                                        className={`${step} is-${state}`}
+                                        aria-current={index === currentIndex ? "step" : undefined}
+                                    >
+                                        <span className="h-step-mark">{state === "done" ? "✓" : index + 1}</span>
+                                        <span className="h-step-label">{t(step)}</span>
+                                        <span className="h-step-caption">{stepCaption(step)}</span>
+                                        {state === "current" ? <WorkerDots status={step} /> : <span className="h-step-dots" />}
+                                    </li>
+                                );
+                            })}
+                        </ol>
+                        <div className="order-summary">
+                            <div className="order-summary-photo">
+                                {progress.image ? (
+                                    <img src={progress.image} alt="" />
+                                ) : (
+                                    <span>{progress.product.slice(0, 1)}</span>
+                                )}
+                            </div>
+                            <div className="order-summary-copy">
+                                <strong>{progress.product}</strong>
+                                <span>{t("customer")}: {progress.customer}</span>
+                                <span>{progress.id}</span>
+                                <span>{t("createdOn")}: {formatDay(progress.createdAt)}</span>
+                                <span className="order-summary-amount">{formatAmount(progress.amount)}</span>
+                            </div>
+                        </div>
+                        {progress.status === "completed" ? (
+                            <>
+                                <p className="modal-success">{t("orderSuccess")}</p>
+                                <button type="button" className="buy blue" onClick={onClose}>
+                                    {t("close")}
+                                </button>
+                                {secondsLeft !== null ? (
+                                    <p className="modal-countdown">
+                                        {t("closeAutomatically").replace("{seconds}", String(secondsLeft))}
+                                    </p>
+                                ) : null}
+                            </>
+                        ) : null}
+                    </>
+                ) : null}
+                {!progress && repeatOrder ? (
+                    error ? <p className="field-error">{error}</p> : <p className="modal-countdown">{saving ? t("creatingOrder") : null}</p>
+                ) : null}
+                {progress || repeatOrder ? null : (
+                <>
                 <label className={customerMissing ? "is-invalid" : undefined}>
                     <span>{t("customer")}</span>
                     <input
@@ -335,9 +509,13 @@ export function CreateOrderModal({ onClose, onCreated }: CreateOrderModalProps) 
                     {imageMissing ? <span className="field-required">{t("requiredField")}</span> : null}
                 </div>
                 {error ? <p className="field-error">{error}</p> : null}
-                <button type="submit" className="buy blue" disabled={saving || imageMissing}>
-                    {saving ? t("creatingOrder") : t("createOrder")}
-                </button>
+                <div className="modal-submit">
+                    <button type="submit" className="reorder-action" disabled={saving || imageMissing}>
+                        {saving ? t("creatingOrder") : t("createOrder")}
+                    </button>
+                </div>
+                </>
+                )}
             </form>
         </div>
     );

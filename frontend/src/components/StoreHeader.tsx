@@ -1,6 +1,6 @@
 import { t } from "../i18n";
 
-export type Screen = "catalog" | "favorites" | "cart" | "orders";
+export type Screen = "catalog" | "favorites" | "orders";
 
 interface StoreHeaderProps {
     screen: Screen;
@@ -13,7 +13,8 @@ export function StoreHeader({ screen, onNavigate }: StoreHeaderProps) {
     return (
         <header className="topbar">
             <button type="button" className="brand" onClick={() => onNavigate("catalog")}>
-                {t("title")}
+                <span className="brand-name">{t("title")}</span>
+                <span className="brand-tagline">{t("brandTagline")}</span>
             </button>
             <nav className="nav" aria-label={t("menu")}>
                 <button type="button" className={catalogOn ? "active" : undefined} onClick={() => onNavigate("catalog")}>

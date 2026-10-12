@@ -12,9 +12,15 @@ public sealed class OrderService(OrdersDbContext database, IOrderCreatedPublishe
         string product,
         decimal amount,
         string? image,
+        Guid? repeatOfId,
         CancellationToken cancellationToken)
     {
-        var order = Order.Create(customer, product, amount, image);
+        if (repeatOfId is Guid sourceId && !await database.Orders.AnyAsync(order => order.Id == sourceId, cancellationToken))
+        {
+            throw new ArgumentException("Order to repeat was not found.", nameof(repeatOfId));
+        }
+
+        var order = Order.Create(customer, product, amount, image, repeatOfId);
         database.Orders.Add(order);
         await database.SaveChangesAsync(cancellationToken);
         await publisher.PublishAsync(OrderCreatedMessage.Create(order.Id), cancellationToken);
