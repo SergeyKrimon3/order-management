@@ -942,6 +942,9 @@ th { color: var(--color-muted); font-weight: 520; }
 
 .sort-arrow.is-idle { opacity: 0.4; }
 
+.sort-row th,
+.order-filter-row th { border-bottom: 0; }
+
 .order-filter-row th {
     padding-top: 0;
     padding-bottom: 8px;
