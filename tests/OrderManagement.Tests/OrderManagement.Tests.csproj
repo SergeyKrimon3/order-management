@@ -25,9 +25,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\OrderManagement.Api\OrderManagement.Api.csproj" />
     <ProjectReference Include="..\..\src\OrderManagement.Domain\OrderManagement.Domain.csproj" />
     <ProjectReference Include="..\..\src\OrderManagement.Infrastructure\OrderManagement.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\OrderManagement.Worker\OrderManagement.Worker.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Golden\*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

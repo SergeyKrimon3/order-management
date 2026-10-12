@@ -193,6 +193,10 @@ Criar um pedido abre um trace no padrão W3C. O `traceparent` fica na linha do o
 
 O health check não entra nesse trace.
 
+## Golden tests
+
+Os contratos JSON aprovados ficam em `tests/OrderManagement.Tests/Golden`. O teste serializa o detalhe do pedido, a listagem, o payload do outbox e o evento de status, e compara o texto com esses arquivos. Uma mudança de campo, nome ou formato quebra a suíte até o arquivo ser atualizado de propósito.
+
 ## Decisões técnicas
 
 | Escolha | Motivo |
@@ -205,6 +209,7 @@ O health check não entra nesse trace.
 | Status ao vivo | O frontend escuta o stream de eventos. Se ele cair, consulta o pedido a cada 3 segundos até a conexão voltar. |
 | Testes de integração | PostgreSQL e RabbitMQ sobem em containers descartáveis. O fluxo do pedido roda neles e os containers somem no fim. |
 | Tracing | O mesmo `traceparent` atravessa a API, o outbox, o RabbitMQ e o worker. |
+| Golden tests | A resposta da API, o payload do outbox e o evento de status são comparados com JSON aprovado no repositório. |
 | React + Vite | A tela é um CRUD. Não há renderização no servidor. |
 | Docker Compose | Sobe API, worker, frontend, PostgreSQL e pgAdmin com um comando. Segredos ficam em variáveis de ambiente. |
 | pgAdmin | Administração do banco dentro do Compose. O DBeaver continua disponível na máquina local. |

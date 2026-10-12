@@ -1,0 +1,13 @@
+[
+  {
+    "id": "1f457889-3e99-4075-8802-ffec7e55026c",
+    "customer": "Ada Lovelace",
+    "product": "Teclado",
+    "amount": 150.50,
+    "status": "completed",
+    "createdAt": "2026-10-11T20:04:41",
+    "updatedAt": "2026-10-11T20:04:49",
+    "image": "https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format\u0026fit=crop\u0026w=900\u0026q=80",
+    "repeatOf": null
+  }
+]
