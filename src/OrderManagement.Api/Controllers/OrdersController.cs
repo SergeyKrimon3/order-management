@@ -55,7 +55,8 @@ public sealed class OrdersController(
             return NotFound();
         }
 
-        return Ok(OrderResponse.From(order));
+        var history = await orders.ListStatusChangesAsync(id, cancellationToken);
+        return Ok(OrderResponse.From(order, history));
     }
 
     [HttpGet("events")]

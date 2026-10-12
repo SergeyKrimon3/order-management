@@ -22,6 +22,7 @@ public sealed class OrderService(OrdersDbContext database)
 
         var order = Order.Create(customer, product, amount, image, repeatOfId);
         database.Orders.Add(order);
+        database.OrderStatusChanges.Add(OrderStatusChange.Record(order.Id, order.Status, order.CreatedAt));
         database.OutboxMessages.Add(OutboxMessage.For(OrderCreatedMessage.Create(order.Id)));
         await database.SaveChangesAsync(cancellationToken);
         return order;
@@ -40,5 +41,15 @@ public sealed class OrderService(OrdersDbContext database)
         return await database.Orders
             .AsNoTracking()
             .FirstOrDefaultAsync(order => order.Id == id, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<OrderStatusChange>> ListStatusChangesAsync(Guid orderId, CancellationToken cancellationToken)
+    {
+        return await database.OrderStatusChanges
+            .AsNoTracking()
+            .Where(change => change.OrderId == orderId)
+            .OrderBy(change => change.OccurredAt)
+            .ThenBy(change => change.Id)
+            .ToListAsync(cancellationToken);
     }
 }

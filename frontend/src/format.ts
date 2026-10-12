@@ -49,6 +49,17 @@ export function formatDayAndTime(value: string): string {
     return `${formatDay(value)} - ${formatTime(value)}`;
 }
 
+export function formatDayAndTimeWithSeconds(value: string): string {
+    const time = new Intl.DateTimeFormat("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        timeZone: "America/Sao_Paulo",
+    }).format(new Date(value));
+
+    return `${formatDay(value)} - ${time}`;
+}
+
 export function parseAmount(value: string): number | null {
     const normalized = value.trim().replace(",", ".");
     if (normalized.length === 0) {

@@ -12,6 +12,7 @@
     "status": "Status",
     "createdAt": "Data",
     "updatedAt": "Atualizado em",
+    "statusHistory": "Histórico do status",
     "actions": "Ações",
     "viewOrder": "Ver pedido",
     "searchOrders": "Buscar",

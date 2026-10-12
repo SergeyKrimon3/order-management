@@ -167,6 +167,14 @@ Um relay na API e outro no worker leem as mensagens ainda não publicadas com `F
 
 `OrderCreated` vai para a fila `order-created`. `OrderStatusChanged` vai para `order-status-changed`.
 
+## Histórico de status
+
+Cada pedido guarda a trilha dos status em `order_status_history`: pendente na criação, depois processando e finalizado. A linha entra na mesma transação da mudança, junto com a mensagem do outbox. A página do pedido mostra essa trilha, com a data e a hora de cada passo.
+
+Pedidos que já existiam antes desta tabela recebem o que dá para reconstruir: pendente na data de criação e, se o status atual for outro, esse status na data de atualização. O instante do "processando" desses pedidos antigos não foi guardado.
+
+O detalhe `GET /orders/{id}` devolve a lista em `history`. A listagem não traz essa lista.
+
 ## Decisões técnicas
 
 | Escolha | Motivo |
@@ -175,6 +183,7 @@ Um relay na API e outro no worker leem as mensagens ainda não publicadas com `F
 | EF Core + Npgsql | Migrations versionadas no código e acesso tipado ao PostgreSQL. A API aplica as migrations ao iniciar. |
 | RabbitMQ | Fila durável para `OrderCreated` e `OrderStatusChanged`, com `CorrelationId` e `EventType`. |
 | Outbox | A mensagem nasce na mesma transação do pedido. O relay publica no RabbitMQ depois. |
+| Histórico de status | Cada transição fica em `order_status_history`, na mesma transação do status. |
 | React + Vite | A tela é um CRUD. Não há renderização no servidor. |
 | Docker Compose | Sobe API, worker, frontend, PostgreSQL e pgAdmin com um comando. Segredos ficam em variáveis de ambiente. |
 | pgAdmin | Administração do banco dentro do Compose. O DBeaver continua disponível na máquina local. |

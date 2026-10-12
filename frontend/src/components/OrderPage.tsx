@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { getOrder, OrderRequestError } from "../api/orders";
-import { formatAmount, formatDayAndTime, statusLabel, stepCaption } from "../format";
+import { formatAmount, formatDayAndTime, formatDayAndTimeWithSeconds, statusLabel, stepCaption } from "../format";
 import { t, type MessageKey } from "../i18n";
 import type { Order } from "../types/order";
 import { ThemeToggle } from "./ThemeToggle";
@@ -113,6 +113,20 @@ export function OrderPage({ id }: OrderPageProps) {
                                     <dd>{formatDayAndTime(order.updatedAt)}</dd>
                                 </div>
                             </dl>
+                            {order.history && order.history.length > 0 ? (
+                                <section className="status-history" aria-label={t("statusHistory")}>
+                                    <h2>{t("statusHistory")}</h2>
+                                    <ol>
+                                        {order.history.map((change) => (
+                                            <li key={change.id}>
+                                                <span className={`pill ${change.status}`}>{statusLabel(change.status)}</span>
+                                                <span className="step-caption">{stepCaption(change.status)}</span>
+                                                <time dateTime={change.occurredAt}>{formatDayAndTimeWithSeconds(change.occurredAt)}</time>
+                                            </li>
+                                        ))}
+                                    </ol>
+                                </section>
+                            ) : null}
                         </>
                     ) : null}
                 </article>

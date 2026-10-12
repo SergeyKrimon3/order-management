@@ -27,6 +27,7 @@ public sealed class OrderCreatedProcessor(OrdersDbContext database)
             if (order.Status == OrderStatus.Pending)
             {
                 order.MarkAsProcessing();
+                database.OrderStatusChanges.Add(OrderStatusChange.Record(order.Id, order.Status, order.UpdatedAt));
                 database.OutboxMessages.Add(OutboxMessage.For(OrderStatusChangedMessage.Create(order.Id, order.Status)));
                 await database.SaveChangesAsync(cancellationToken);
             }
@@ -50,6 +51,7 @@ public sealed class OrderCreatedProcessor(OrdersDbContext database)
         }
 
         order.MarkAsCompleted();
+        database.OrderStatusChanges.Add(OrderStatusChange.Record(order.Id, order.Status, order.UpdatedAt));
         database.OutboxMessages.Add(OutboxMessage.For(OrderStatusChangedMessage.Create(order.Id, order.Status)));
         await database.SaveChangesAsync(cancellationToken);
     }

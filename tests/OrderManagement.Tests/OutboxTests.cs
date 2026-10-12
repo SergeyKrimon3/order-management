@@ -30,6 +30,9 @@ public class OutboxTests
         Assert.NotNull(payload);
         Assert.Equal(order.Id, payload.OrderId);
         Assert.Equal(order.Id, payload.CorrelationId);
+        var history = await database.OrderStatusChanges.SingleAsync(change => change.OrderId == order.Id);
+        Assert.Equal(OrderStatus.Pending, history.Status);
+        Assert.Equal(order.CreatedAt, history.OccurredAt);
     }
 
     [Fact]
@@ -46,6 +49,7 @@ public class OutboxTests
         Assert.Equal(before, await database.Orders.CountAsync());
         Assert.False(await database.Orders.AnyAsync(item => item.Id == order.Id));
         Assert.Empty(await database.OutboxMessages.ToListAsync());
+        Assert.Empty(await database.OrderStatusChanges.ToListAsync());
     }
 
     private static async Task<OrdersDbContext> CreateDatabaseAsync()

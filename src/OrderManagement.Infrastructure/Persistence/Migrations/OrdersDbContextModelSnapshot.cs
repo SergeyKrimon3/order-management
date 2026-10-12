@@ -171,6 +171,39 @@ namespace OrderManagement.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("OrderManagement.Domain.Orders.OrderStatusChange", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("occurred_at");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("order_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId", "OccurredAt");
+
+                    b.ToTable("order_status_history", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_order_status_history_status", "status IN ('pending', 'processing', 'completed')");
+                        });
+                });
+
             modelBuilder.Entity("OrderManagement.Infrastructure.Messaging.OutboxMessage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -211,6 +244,15 @@ namespace OrderManagement.Infrastructure.Persistence.Migrations
                 });
 
             modelBuilder.Entity("OrderManagement.Domain.Favorites.Favorite", b =>
+                {
+                    b.HasOne("OrderManagement.Domain.Orders.Order", null)
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("OrderManagement.Domain.Orders.OrderStatusChange", b =>
                 {
                     b.HasOne("OrderManagement.Domain.Orders.Order", null)
                         .WithMany()

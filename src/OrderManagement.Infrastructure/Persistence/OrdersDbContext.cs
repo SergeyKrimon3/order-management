@@ -13,6 +13,8 @@ public sealed class OrdersDbContext(DbContextOptions<OrdersDbContext> options) :
 
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
+    public DbSet<OrderStatusChange> OrderStatusChanges => Set<OrderStatusChange>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(OrdersDbContext).Assembly);

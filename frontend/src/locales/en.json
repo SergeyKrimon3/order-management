@@ -12,6 +12,7 @@
     "status": "Status",
     "createdAt": "Date",
     "updatedAt": "Updated",
+    "statusHistory": "Status history",
     "actions": "Actions",
     "viewOrder": "View order",
     "searchOrders": "Search",

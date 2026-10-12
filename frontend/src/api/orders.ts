@@ -1,4 +1,4 @@
-import type { CreateOrderInput, Order, OrderStatus } from "../types/order";
+import type { CreateOrderInput, Order, OrderStatus, OrderStatusChange } from "../types/order";
 
 const statuses: readonly OrderStatus[] = ["pending", "processing", "completed"];
 
@@ -8,6 +8,19 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isOrderStatus(value: unknown): value is OrderStatus {
     return typeof value === "string" && statuses.some((status) => status === value);
+}
+
+function isStatusChange(value: unknown): value is OrderStatusChange {
+    return (
+        isRecord(value) &&
+        typeof value.id === "number" &&
+        isOrderStatus(value.status) &&
+        typeof value.occurredAt === "string"
+    );
+}
+
+function isHistory(value: unknown): value is OrderStatusChange[] {
+    return Array.isArray(value) && value.every(isStatusChange);
 }
 
 function isOrder(value: unknown): value is Order {
@@ -24,7 +37,8 @@ function isOrder(value: unknown): value is Order {
         typeof value.createdAt === "string" &&
         typeof value.updatedAt === "string" &&
         (value.image === null || typeof value.image === "string") &&
-        (value.repeatOf === null || typeof value.repeatOf === "string")
+        (value.repeatOf === null || typeof value.repeatOf === "string") &&
+        (value.history === undefined || value.history === null || isHistory(value.history))
     );
 }
 

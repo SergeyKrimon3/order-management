@@ -1,5 +1,11 @@
 export type OrderStatus = "pending" | "processing" | "completed";
 
+export interface OrderStatusChange {
+    id: number;
+    status: OrderStatus;
+    occurredAt: string;
+}
+
 export interface Order {
     id: string;
     customer: string;
@@ -10,6 +16,7 @@ export interface Order {
     updatedAt: string;
     image: string | null;
     repeatOf: string | null;
+    history?: OrderStatusChange[];
 }
 
 export interface CreateOrderInput {
