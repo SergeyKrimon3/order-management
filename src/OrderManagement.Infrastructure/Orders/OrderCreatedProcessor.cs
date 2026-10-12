@@ -16,8 +16,18 @@ public sealed class OrderCreatedProcessor(OrdersDbContext database)
 
         if (order.Status == OrderStatus.Pending)
         {
-            order.MarkAsProcessing();
-            await database.SaveChangesAsync(cancellationToken);
+            var visible = OrderProcessing.RemainingPending(order.CreatedAt, BrazilTime.Now());
+            if (visible > TimeSpan.Zero)
+            {
+                await Task.Delay(visible, cancellationToken);
+            }
+
+            await database.Entry(order).ReloadAsync(cancellationToken);
+            if (order.Status == OrderStatus.Pending)
+            {
+                order.MarkAsProcessing();
+                await database.SaveChangesAsync(cancellationToken);
+            }
         }
 
         if (order.Status != OrderStatus.Processing)

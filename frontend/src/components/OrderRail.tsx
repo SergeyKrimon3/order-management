@@ -2,6 +2,7 @@ import { findProductByLabel, type CatalogProduct } from "../catalog";
 import { formatAmount, statusLabel } from "../format";
 import { t } from "../i18n";
 import type { Order } from "../types/order";
+import { WorkerDots } from "./WorkerDots";
 
 interface OrderRailProps {
     orders: readonly Order[];
@@ -41,7 +42,10 @@ export function OrderRail({ orders, selectedId, onSelect }: OrderRailProps) {
                                     {order.product} · {formatAmount(order.amount)}
                                 </small>
                             </span>
-                            <span className={`pill ${order.status}`}>{statusLabel(order.status)}</span>
+                            <span className="order-lead">
+                                <span className={`pill ${order.status}`}>{statusLabel(order.status)}</span>
+                                <WorkerDots status={order.status} />
+                            </span>
                         </button>
                     </li>
                 );

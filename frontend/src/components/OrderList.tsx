@@ -1,6 +1,7 @@
 import { formatAmount, formatDate, statusLabel } from "../format";
 import { t } from "../i18n";
 import type { Order } from "../types/order";
+import { WorkerDots } from "./WorkerDots";
 
 interface OrderListProps {
     orders: Order[];
@@ -37,7 +38,10 @@ export function OrderList({ orders, selectedId, onSelect }: OrderListProps) {
                                 <td>{order.product}</td>
                                 <td>{formatAmount(order.amount)}</td>
                                 <td>
-                                    <span className={`pill ${order.status}`}>{statusLabel(order.status)}</span>
+                                    <span className="order-lead">
+                                        <span className={`pill ${order.status}`}>{statusLabel(order.status)}</span>
+                                        <WorkerDots status={order.status} />
+                                    </span>
                                 </td>
                                 <td>{formatDate(order.createdAt)}</td>
                             </tr>
@@ -56,7 +60,10 @@ export function OrderList({ orders, selectedId, onSelect }: OrderListProps) {
                             <strong>{order.customer}</strong>
                             <span>{order.product}</span>
                             <span>{formatAmount(order.amount)}</span>
-                            <span className={`pill ${order.status}`}>{statusLabel(order.status)}</span>
+                            <span className="order-lead">
+                                <span className={`pill ${order.status}`}>{statusLabel(order.status)}</span>
+                                <WorkerDots status={order.status} />
+                            </span>
                         </button>
                     </li>
                 ))}
