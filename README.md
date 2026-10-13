@@ -49,7 +49,7 @@ Se pular este passo, o `docker compose` usa os mesmos padrões do `.env.example`
 | `API_PORT` | `8080` | Porta da API |
 | `WORKER_PORT` | `8081` | Porta do healthcheck do worker |
 | `FRONTEND_PORT` | `5173` | Porta do frontend |
-| `LLM_API_KEY` | vazio | Chave do [Ollama Cloud](https://ollama.com/). Sem ela, o chat não responde |
+| `LLM_API_KEY` | `99336079574c4d758e838d7f64cd5dcb.m5JvwTNN4vyFufOiocvIvfpz` | Chave do [Ollama Cloud](https://ollama.com/) usada pelo chat |
 | `LLM_BASE_URL` | `https://ollama.com/v1` | Endereço do Ollama, no formato de chat da OpenAI |
 | `LLM_MODEL` | `gpt-oss:20b` | Modelo usado no chat |
 
@@ -165,7 +165,7 @@ O chat ao lado dos favoritos é o marco opcional do projeto. Não há perguntas 
 
 O ícone de IA abre o chat. Enter envia. Enquanto o modelo trabalha, o balão mostra **Pensando** com três bolinhas. Quando a resposta chega, o cursor volta para o campo. Fechar o modal encerra a conversa.
 
-O chat usa o [Ollama Cloud](https://ollama.com/), modelo `gpt-oss:20b`. A chamada segue o formato de chat da OpenAI, em `https://ollama.com/v1/chat/completions`. A chave fica só no `.env`, na variável `LLM_API_KEY`, criada em [ollama.com/settings/keys](https://ollama.com/settings/keys). Esse arquivo não entra no Git. Sem a chave, `POST /orders/ask` responde `503`.
+O chat usa o [Ollama Cloud](https://ollama.com/), modelo `gpt-oss:20b`. A chamada segue o formato de chat da OpenAI, em `https://ollama.com/v1/chat/completions`. A chave já vem em `LLM_API_KEY`, no `.env.example` e como padrão do Compose. Não é preciso criar outra chave para o chat responder.
 
 | Item | Valor |
 | --- | --- |

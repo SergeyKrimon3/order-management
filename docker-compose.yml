@@ -69,7 +69,7 @@ services:
       RabbitMQ__Username: ${RABBITMQ_USER:-admin}
       RabbitMQ__Password: ${RABBITMQ_PASSWORD:-admin}
       Llm__BaseUrl: ${LLM_BASE_URL:-https://ollama.com/v1}
-      Llm__ApiKey: ${LLM_API_KEY:-}
+      Llm__ApiKey: ${LLM_API_KEY:-99336079574c4d758e838d7f64cd5dcb.m5JvwTNN4vyFufOiocvIvfpz}
       Llm__Model: ${LLM_MODEL:-gpt-oss:20b}
     ports:
       - "127.0.0.1:${API_PORT:-8080}:8080"
